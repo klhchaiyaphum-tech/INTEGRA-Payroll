@@ -1,0 +1,57 @@
+<div id="page-scan" class="page-section d-none">
+  <div class="container-fluid py-4">
+    <div class="card border-0 shadow-lg rounded-4 text-center">
+      <div class="card-body p-5">
+        <div id="scan-timer" class="display-4 fw-bold mb-2">00:00:00</div>
+        <p class="text-muted mb-4" id="current-date-th">--/--/----</p>
+
+        <div id="distance-alert" class="alert alert-secondary py-3 rounded-4 mb-4">
+          <div class="spinner-border spinner-border-sm me-2"></div> กำลังตรวจสอบพิกัดบริษัท...
+        </div>
+
+        <div class="d-grid gap-3">
+          <button id="btn-checkin" class="btn btn-primary py-4 rounded-4 shadow-sm fw-bold d-none" onclick="doScan('IN')">
+             <i class="bi bi-box-arrow-in-right fs-2 d-block mb-1"></i> ลงเวลาเข้างาน (CHECK-IN)
+          </button>
+          <button id="btn-checkout" class="btn btn-outline-danger py-4 rounded-4 shadow-sm fw-bold d-none" onclick="doScan('OUT')">
+             <i class="bi bi-box-arrow-left fs-2 d-block mb-1"></i> ลงเวลาเลิกงาน (CHECK-OUT)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function initScan() {
+      // อัปเดตเวลาวินาทีต่อวินาที
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('scan-timer').innerText = now.toLocaleTimeString('th-TH');
+        document.getElementById('current-date-th').innerText = now.toLocaleDateString('th-TH', { dateStyle: 'full' });
+      }, 1000);
+
+      // เช็ก GPS
+      navigator.geolocation.getCurrentPosition(pos => {
+        google.script.run.withSuccessHandler(res => {
+          const distAlert = document.getElementById('distance-alert');
+          if(res.isInside) {
+            distAlert.className = "alert alert-success py-3 rounded-4 mb-4";
+            distAlert.innerHTML = `<i class="bi bi-geo-fill me-2"></i>คุณอยู่ในพื้นที่บริษัท (${res.distance} ม.)`;
+            document.getElementById('btn-checkin').classList.remove('d-none');
+            document.getElementById('btn-checkout').classList.remove('d-none');
+          } else {
+            distAlert.className = "alert alert-danger py-3 rounded-4 mb-4";
+            distAlert.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-2"></i>คุณอยู่นอกพื้นที่บริษัท (${res.distance} ม.)`;
+          }
+        }).checkLocation(pos.coords.latitude, pos.coords.longitude);
+      });
+    }
+
+    function doScan(type) {
+      // เรียกใช้ AppAlert โหลดข้อมูล...
+      google.script.run.withSuccessHandler(res => {
+        AppAlert.success('บันทึกสำเร็จ', `ลงเวลา ${type === 'IN' ? 'เข้างาน' : 'เลิกงาน'} เรียบร้อยค่ะ`);
+      }).saveAttendance(type);
+    }
+  </script>
+</div>

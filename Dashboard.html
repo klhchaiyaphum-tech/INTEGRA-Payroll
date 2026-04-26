@@ -1,0 +1,125 @@
+<div id="page-dashboard" class="page-section">
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-primary text-white p-3 rounded-4">
+        <div class="small opacity-75">พนักงานทั้งหมด (Active)</div>
+        <div class="fs-2 fw-bold" id="dash-total-emp">0</div>
+        <div class="x-small">กำลังทำงานในระบบ</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-danger text-white p-3 rounded-4">
+        <div class="small opacity-75">อัตราการหมุนเวียน (Turnover)</div>
+        <div class="fs-2 fw-bold" id="dash-turnover">0%</div>
+        <div class="x-small">คำนวณย้อนหลัง 30 วัน</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-dark text-white p-3 rounded-4">
+        <div class="small opacity-75">ผู้อนุมัติในระบบ</div>
+        <div class="fs-2 fw-bold" id="dash-approvers">0</div>
+        <div class="x-small">Admin & Approver Role</div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 bg-warning text-dark p-3 rounded-4">
+        <div class="small opacity-75">OT น่าสงสัย (!)</div>
+        <div class="fs-2 fw-bold text-danger" id="dash-suspicious-ot">0</div>
+        <div class="x-small">ทำ OT เกินค่าเฉลี่ยบริษัท</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-shield-check text-primary"></i> รายการรออนุมัติ & ตรวจสอบ</h5>
+          <div class="row g-2">
+            <div class="col-md-6">
+              <button class="btn btn-light w-100 p-3 text-start border d-flex justify-content-between align-items-center" onclick="showPage('page-payroll')">
+                <span><i class="bi bi-clock-history me-2 text-warning"></i> OT รออนุมัติ</span>
+                <span class="badge bg-warning text-dark" id="count-ot-pending">0</span>
+              </button>
+            </div>
+            <div class="col-md-6">
+              <button class="btn btn-light w-100 p-3 text-start border d-flex justify-content-between align-items-center" onclick="showPage('page-leave')">
+                <span><i class="bi bi-calendar2-x me-2 text-danger"></i> การลา รออนุมัติ</span>
+                <span class="badge bg-danger" id="count-leave-pending">0</span>
+              </button>
+            </div>
+            <div class="col-md-6">
+              <button class="btn btn-light w-100 p-3 text-start border d-flex justify-content-between align-items-center" onclick="viewAbsentList()">
+                <span><i class="bi bi-person-x me-2 text-secondary"></i> พนักงานที่ขาดงานวันนี้</span>
+                <span class="badge bg-secondary" id="count-absent">0</span>
+              </button>
+            </div>
+            <div class="col-md-6">
+              <button class="btn btn-light w-100 p-3 text-start border d-flex justify-content-between align-items-center" onclick="viewLateList()">
+                <span><i class="bi bi-person-dash me-2 text-orange"></i> พนักงานที่มาสาย (เกิน ${late_idle} นาที)</span>
+                <span class="badge bg-warning" id="count-late">0</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-4">
+      <div class="card border-0 shadow-sm rounded-4 h-100">
+        <div class="card-body p-4">
+          <h5 class="fw-bold mb-4"><i class="bi bi-file-earmark-pdf text-danger"></i> ออกเอกสาร & ระบบ</h5>
+          <div class="d-grid gap-2">
+            <button class="btn btn-outline-primary" onclick="openSlipExportModal()">
+              <i class="bi bi-wallet2 me-2"></i> ออกสลิปเงินเดือน (รายคน/กลุ่ม)
+            </button>
+            <button class="btn btn-outline-info" onclick="openCertExportModal()">
+              <i class="bi bi-file-person me-2"></i> ออกใบรับรองเงินเดือน
+            </button>
+            <button class="btn btn-outline-success" onclick="sendNewHireToken()">
+              <i class="bi bi-vignette me-2"></i> ส่ง Token พนักงานใหม่ (SMS)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+      <h5 class="fw-bold mb-3"><i class="bi bi-calendar-event text-primary me-2"></i>ปฏิทินวันหยุดและกิจกรรม</h5>
+      <div id="holiday-calendar-view" class="p-3 bg-light rounded text-center">
+        <p class="text-muted">กำลังโหลดข้อมูลวันหยุดจากระบบ...</p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  // ฟังก์ชันดึงตัวเลขมาเติมในช่อง Bubbles
+  function updateDashboard() {
+    google.script.run.withSuccessHandler(function(stats) {
+      // เติมตัวเลขพนักงานทั้งหมด
+      const totalEl = document.getElementById('dash-total-emp');
+      if(totalEl) totalEl.innerText = stats.totalActive;
+      
+      // เติมตัวเลขอื่นๆ
+      if(document.getElementById('dash-turnover')) document.getElementById('dash-turnover').innerText = stats.turnover;
+      if(document.getElementById('dash-approvers')) document.getElementById('dash-approvers').innerText = stats.approvers;
+      if(document.getElementById('count-leave-pending')) document.getElementById('count-leave-pending').innerText = stats.pendingLeave;
+    }).getDashboardStats();
+  }
+
+  // ใช้ MutationObserver ตรวจสอบว่าถ้าหน้า Dashboard ถูกเปิด (เลิก d-none) ให้โหลดข้อมูลทันที
+  const dashboardObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (!mutation.target.classList.contains('d-none')) {
+        updateDashboard();
+      }
+    });
+  });
+
+  window.addEventListener('load', () => {
+    const dashPage = document.getElementById('page-dashboard');
+    if(dashPage) dashboardObserver.observe(dashPage, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>

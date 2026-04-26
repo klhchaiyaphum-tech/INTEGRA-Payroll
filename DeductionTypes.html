@@ -1,0 +1,130 @@
+<div id="page-deduction-types" class="page-section d-none">
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-gear-wide-connected me-2"></i>ตั้งค่ารายการหักเงินเดือน</h6>
+      <button class="btn btn-primary btn-sm rounded-pill" onclick="openAddDeductionModal()">
+        <i class="bi bi-plus-lg me-1"></i>เพิ่มรายการใหม่
+      </button>
+    </div>
+    <div class="card-body p-0">
+      <table class="table table-hover mb-0" style="font-size: 13px;">
+        <thead class="table-light">
+          <tr>
+            <th>ชื่อรายการ</th>
+            <th>อัตรา (%)</th>
+            <th>ยอดตายตัว</th>
+            <th>หักสูงสุด</th> <th>ปุ่ม Export</th> <th class="text-center">จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="deduction-list-body">
+          </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="deductionModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow-lg rounded-4">
+      <div class="modal-header border-bottom-0">
+        <h6 class="modal-title fw-bold" id="deductionModalTitle">จัดการรายการหัก</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="deductionForm">
+          <input type="hidden" id="deduct-id">
+          
+          <div class="mb-3">
+            <label class="form-label small fw-bold">ชื่อรายการ (เช่น สปส ประกันสังคม)</label>
+            <input type="text" id="deduct-name" class="form-control rounded-3" required>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label small fw-bold">อัตราหัก (เช่น 5%)</label>
+              <input type="text" id="deduct-rate" class="form-control rounded-3" placeholder="5%">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-bold">ยอดหักตายตัว (บาท)</label>
+              <input type="number" id="deduct-amount" class="form-control rounded-3" placeholder="500">
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="form-label small fw-bold text-danger">เพดานหักสูงสุด (Max Amount)</label>
+            <input type="number" id="deduct-max" class="form-control rounded-3 border-danger" placeholder="750">
+            <div class="form-text" style="font-size: 10px;">*ใส่ 750 สำหรับประกันสังคม (กฎหมายกำหนดเพดานเงินเดือน 15,000)</div>
+          </div>
+
+          <hr>
+
+          <div class="form-check form-switch mb-2">
+            <input class="form-check-input" type="checkbox" id="deduct-show-btn">
+            <label class="form-check-label small fw-bold" for="deduct-show-btn">สร้างปุ่มออกเอกสาร PDF ในหน้า Payroll</label>
+          </div>
+          
+          <div id="btn-label-area" class="mb-3 d-none">
+            <label class="form-label small fw-bold">ชื่อที่ปรากฏบนปุ่ม (Button Label)</label>
+            <input type="text" id="deduct-btn-label" class="form-control rounded-3" placeholder="สปส (PDF)">
+          </div>
+
+        </form>
+      </div>
+      <div class="modal-footer border-top-0">
+        <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-sm btn-primary rounded-pill px-4" onclick="saveDeductionType()">บันทึกข้อมูล</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // แสดง/ซ่อน ช่องใส่ชื่อปุ่มตาม Checkbox
+  document.getElementById('deduct-show-btn').addEventListener('change', function() {
+    const area = document.getElementById('btn-label-area');
+    if(this.checked) area.classList.remove('d-none');
+    else area.classList.add('d-none');
+  });
+
+  // ฟังก์ชันดึงข้อมูลมาแสดง (เรียกจาก Index.html)
+  function renderDeductionList(data) {
+    const body = document.getElementById('deduction-list-body');
+    body.innerHTML = '';
+    data.forEach(item => {
+      body.innerHTML += `
+        <tr>
+          <td><span class="fw-bold">${item.name}</span><br><small class="text-muted">${item.id}</small></td>
+          <td>${item.rate || '-'}</td>
+          <td>${item.amount ? '฿'+item.amount.toLocaleString() : '-'}</td>
+          <td class="text-danger fw-bold">${item.max ? '฿'+item.max.toLocaleString() : 'ไม่จำกัด'}</td>
+          <td>
+            ${item.showBtn ? '<span class="badge bg-success rounded-pill">เปิดปุ่ม: '+item.btnLabel+'</span>' : '<span class="badge bg-light text-muted rounded-pill">ปิด</span>'}
+          </td>
+          <td class="text-center">
+            <button class="btn btn-light btn-sm" onclick="editDeduction('${item.id}')"><i class="bi bi-pencil"></i></button>
+          </td>
+        </tr>
+      `;
+    });
+  }
+
+  // ฟังก์ชันบันทึกข้อมูล
+  function saveDeductionType() {
+    const payload = {
+      id: document.getElementById('deduct-id').value,
+      name: document.getElementById('deduct-name').value,
+      rate: document.getElementById('deduct-rate').value,
+      amount: document.getElementById('deduct-amount').value,
+      max: document.getElementById('deduct-max').value, // 🆕 ส่งค่า Max
+      showBtn: document.getElementById('deduct-show-btn').checked, // 🆕 ส่งสถานะปุ่ม
+      btnLabel: document.getElementById('deduct-btn-label').value // 🆕 ส่งชื่อปุ่ม
+    };
+    
+    AppAlert.loading('กำลังบันทึกตั้งค่ารายการหัก...');
+    google.script.run.withSuccessHandler(function(res) {
+      AppAlert.success('บันทึกสำเร็จ', 'อัปเดตโครงสร้างรายการหักเรียบร้อยแล้วค่ะ');
+      Bootstrap5Modal.getInstance(document.getElementById('deductionModal')).hide();
+      initSettings(); // โหลดหน้าตั้งค่าใหม่
+    }).updateDeductionType(payload); // ต้องเพิ่มฟังก์ชันนี้ใน Code.gs ด้วยนะคะ
+  }
+</script>

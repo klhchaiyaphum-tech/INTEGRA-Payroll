@@ -1,0 +1,326 @@
+<div id="page-attendance" class="page-section d-none">
+  
+  <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0 text-primary">
+        <i class="bi bi-calendar3 me-2"></i>สรุปการลงเวลาทำงาน V.78.1
+      </h5>
+      <div class="d-flex gap-2 align-items-center">
+        <select id="atten-month" class="form-select form-select-sm" style="width: 130px;"></select>
+        <select id="atten-year" class="form-select form-select-sm" style="width: 100px;"></select>
+        <button class="btn btn-primary btn-sm rounded-pill px-3" onclick="loadAttendanceCalendar()">
+          <i class="bi bi-search me-1"></i>เรียกดู
+        </button>
+      </div>
+    </div>
+    
+    <div class="card-body p-0">
+      <div id="atten-loading" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p class="text-muted small mt-2">กำลังดึงข้อมูล Timesheet...</p>
+      </div>
+      <div class="table-responsive" id="atten-table-wrapper" style="max-height: 70vh;">
+        <table class="table table-bordered mb-0 timesheet-table" style="font-size: 11px;">
+          <thead class="table-dark text-center sticky-top">
+            <tr id="atten-header-days">
+              </tr>
+          </thead>
+          <tbody id="atten-calendar-body">
+            </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content border-0 shadow-lg rounded-4">
+        <div class="modal-header border-bottom-0 pb-0">
+          <h6 class="modal-title fw-bold text-dark" id="editModalTitle">Edit Attendance Entry</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form id="editAttendanceForm">
+            <input type="hidden" id="edit-empid">
+            <input type="hidden" id="edit-date">
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Status</label>
+              <select id="edit-status" class="form-select form-select-sm rounded-3">
+                <option value="ปกติ">ปกติ (Present)</option>
+                <option value="สาย">สาย (Late)</option>
+                <option value="ขาด">ขาด (Absent)</option>
+                <option value="ลาป่วย">ลาป่วย (Sick Leave)</option>
+                <option value="ลากิจ">ลากิจ (Personal Leave)</option>
+                <option value="ลาพักร้อน">ลาพักร้อน (Vacation)</option>
+              </select>
+            </div>
+            
+            <div class="row mb-3">
+              <div class="col-6">
+                <label class="form-label small fw-bold">Time IN</label>
+                <input type="time" id="edit-time-in" class="form-control form-control-sm rounded-3">
+              </div>
+              <div class="col-6">
+                <label class="form-label small fw-bold">Time OUT</label>
+                <input type="time" id="edit-time-out" class="form-control form-control-sm rounded-3">
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label small fw-bold">Remark / Proof Link (รูปหลักฐาน)</label>
+              <textarea id="edit-remarks" class="form-control form-control-sm rounded-3" rows="2" placeholder="ใส่หมายเหตุการแก้ไข หรือลิงก์รูปถ่ายหลักฐานจากมือถือ"></textarea>
+            </div>
+            
+            <div id="edit-error" class="alert alert-danger small d-none p-2 mb-0"></div>
+          </form>
+        </div>
+        <div class="modal-footer border-top-0 d-flex justify-content-between">
+          <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-sm btn-success rounded-pill px-4 fw-bold" onclick="saveAttendanceEdit()">
+            <i class="bi bi-save me-1"></i>Save Changes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .timesheet-table { min-width: 1800px; } /* ขยายตารางให้กว้างตามจำนวนวัน */
+  .timesheet-table th, .timesheet-table td { vertical-align: middle; padding: 4px; text-align: center; }
+  
+  /* ล็อคคอลัมน์ A (ชื่อพนักงาน) */
+  .sticky-col-name { 
+    position: sticky; left: 0; background: #fff; z-index: 10; font-weight: bold; min-width: 160px; text-align: left !important;
+    border-right: 2px solid #ddd !important;
+  }
+  .table-dark .sticky-col-name { background: #343a40; border-right: 2px solid #444 !important; }
+  
+  /* สีสันสื่อความหมาย (Color Coding) */
+  .bg-holiday { background-color: #ffe5e5 !important; color: #d9534f; } /* สีชมพูอ่อน วันหยุด */
+  .bg-weekend { background-color: #f8f9fa !important; } /* สีเทาอ่อน เสาร์-อาทิตย์ */
+  
+  .bg-leave-approved { background-color: #e5f2ff !important; color: #0275d8; font-weight: bold; } /* สีฟ้า วันลาอนุมัติ */
+  .bg-leave-pending { background-color: #fff9e6 !important; color: #f0ad4e; border: 1px dashed #f0ad4e; } /* สีเหลือง รออนุมัติ */
+  
+  .status-present { color: #28a745; font-weight: bold; } /* มางานสีเขียว */
+  .status-absent { color: #dc3545; font-weight: bold; } /* ขาดงานสีแดง */
+  
+  /* จัดการกล่องข้อมูลในช่องวันที่ */
+  .cell-content { display: flex; flex-direction: column; align-items: center; gap: 1px; position: relative; }
+  .cell-detail { font-size: 8px; line-height: 1.1; color: #666; }
+  
+  /* ไอคอนดินสอแก้ไข (Edit Icon) ปรากฏเมื่อ Hover */
+  .cell-edit-btn { 
+    position: absolute; top: 1px; right: 1px; opacity: 0; transition: opacity 0.2s; cursor: pointer; color: #aaa;
+  }
+  .cell-content:hover .cell-edit-btn { opacity: 0.8; }
+  .cell-edit-btn:hover { opacity: 1 !important; color: var(--primary-color, #3c8dbc); }
+</style>
+
+<script>
+  // ตัวแปรเก็บข้อมูลรายเดือนที่ดึงมา (SPA Cache)
+  let attenCalendarCache = [];
+  let currentAttenMonth = 0;
+  let currentAttenYear = 0;
+
+  // 1. ฟังก์ชันเริ่มต้นหน้า (SPA จะเรียกใช้เมื่อเปิดหน้านี้)
+  function initAttendance() {
+    const now = new Date();
+    currentAttenMonth = now.getMonth() + 1;
+    currentAttenYear = now.getFullYear();
+    populateAttenSelectors(currentAttenMonth, currentAttenYear);
+    loadAttendanceCalendar();
+  }
+
+  // 2. เติมข้อมูลตัวเลือกเดือนและปี
+  function populateAttenSelectors(m, y) {
+    const monthSel = document.getElementById('atten-month');
+    const yearSel = document.getElementById('atten-year');
+    const months = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+    
+    if(monthSel.options.length === 0) {
+      months.forEach((name, i) => {
+        monthSel.add(new Option(name, i + 1));
+      });
+      for(let i = y - 2; i <= y + 1; i++) {
+        yearSel.add(new Option(i, i));
+      }
+    }
+    monthSel.value = m;
+    yearSel.value = y;
+  }
+
+  // 3. ฟังก์ชันหลัก: ดึงข้อมูลและสร้าง Timesheet Grid
+  function loadAttendanceCalendar() {
+    currentAttenMonth = parseInt(document.getElementById('atten-month').value);
+    currentAttenYear = parseInt(document.getElementById('atten-year').value);
+    
+    document.getElementById('atten-loading').classList.remove('d-none');
+    document.getElementById('atten-table-wrapper').classList.add('d-none');
+    
+    google.script.run.withSuccessHandler(function(res) {
+      document.getElementById('atten-loading').classList.add('d-none');
+      document.getElementById('atten-table-wrapper').classList.remove('d-none');
+      attenCalendarCache = res.employees; // เก็บเข้า Cache
+      renderAttendanceTable(res);
+    }).getAttendanceCalendarData(currentAttenMonth, currentAttenYear);
+  }
+
+  // 4. สร้างหัวตาราง (วันที่) และเนื้อหา (รายชื่อพนักงาน)
+  function renderAttendanceTable(data) {
+    const headerRow = document.getElementById('atten-header-days');
+    const body = document.getElementById('atten-calendar-body');
+    headerRow.innerHTML = ''; body.innerHTML = '';
+
+    // 4.1 สร้างหัวตาราง (วันที่ 1-31) ล็อคคอลัมน์ชื่อไว้
+    headerRow.innerHTML = `<th class="sticky-col-name text-center">พนักงาน</th>`;
+    data.header.forEach(h => {
+      const cls = h.isHoliday ? 'bg-holiday text-danger' : (h.isWeekend ? 'bg-weekend text-muted' : '');
+      headerRow.innerHTML += `<th class="${cls}"><div style="width:45px;">${h.day}<br><span style="font-size:8px;">${h.dayName}</span></div></th>`;
+    });
+    // หัวสรุปท้ายแถว
+    headerRow.innerHTML += `<th class="text-center bg-secondary" style="width:100px;">สรุป (มา/สาย/OT)</th>`;
+    headerRow.innerHTML += `<th class="text-center bg-secondary" style="width:90px;">รายได้สะสม</th>`;
+
+    // 4.2 สร้างรายชื่อพนักงานและข้อมูลรายวัน
+    data.employees.forEach(emp => {
+      let row = `<tr>`;
+      // คอลัมน์ชื่อ ล็อคติดหน้าจอ
+      row += `<td class="sticky-col-name"><div class="d-flex align-items-center gap-1">${emp.name}</div></td>`;
+
+      // ช่องข้อมูลวันที่ในเดือน
+      emp.days.forEach(d => {
+        row += renderDayCell(d, emp.id, emp.name);
+      });
+
+      // คอลัมน์สรุป
+      row += `<td>${emp.summary.present}/${emp.summary.late}/${emp.summary.ot}</td>`;
+      row += `<td class="fw-bold text-dark text-end">฿${emp.summary.income.toLocaleString()}</td>`;
+      row += `</tr>`;
+      body.innerHTML += row;
+    });
+  }
+
+  // 5. สร้างเนื้อหาภายในช่องวันที่ (รองรับสีสันและปุ่มแก้ไข)
+  function renderDayCell(day, empId, empName) {
+    let cls = ''; let content = '';
+
+    switch(day.status) {
+      case 'holiday': cls = 'bg-holiday text-danger'; content = 'HOLIDAY'; break;
+      case 'weekend_absent': cls = 'bg-weekend text-muted'; content = ''; break; // เสาร์อาทิตย์ที่ไม่ได้มา
+      case 'weekend_present': cls = 'bg-weekend'; break; // มางานวันหยุด
+      case 'leave_app': cls = 'bg-leave-approved'; content = 'LEAVE (Appv.)'; break;
+      case 'leave_pend': cls = 'bg-leave-pending'; content = 'LEAVE (Pend.)'; break;
+      case 'absent': cls = 'bg-leave-pending text-danger font-weight-bold'; content = 'X'; break; // ขาดงานสีแดง
+      case 'present': break; // มาปกติ ไม่ใส่สี
+    }
+
+    // กล่องเนื้อหาและปุ่มแก้ไข
+    let cellContentHTML = `<div class="cell-content">`;
+    if(day.status === 'holiday') {
+       cellContentHTML += `<span class="small font-weight-bold">${content}</span><span class="cell-detail">${day.detail.remark}</span>`;
+    } else if(day.status.includes('leave')) {
+       cellContentHTML += `<span class="small font-weight-bold">${content}</span>`;
+    } else if(day.detail.in && day.detail.out) {
+       // ถ้ามาทำงาน โชว์เวลา
+       const statusCls = day.detail.late > 0 ? 'text-warning' : 'status-present';
+       cellContentHTML += `<span class="cell-detail ${statusCls}">IN: ${day.detail.in}<br>OUT: ${day.detail.out}</span>`;
+       if(day.detail.ot > 0) cellContentHTML += `<span class="cell-detail text-primary">OT: ${day.detail.ot}h</span>`;
+    } else if(content) {
+       cellContentHTML += `<span class="font-weight-bold fs-6">${content}</span>`;
+    }
+
+    // 🛑 เพิ่มไอคอนดินสอแก้ไข (เฉพาะวันปกติที่มีข้อมูล)
+    if(day.status === 'present' || day.status.includes('weekend')) {
+      const escapedName = empName.replace(/'/g, "\\'");
+      cellContentHTML += `
+        <i class="bi bi-pencil cell-edit-btn" 
+           title="แก้ไขเวลาวันที่ ${day.day}" 
+           onclick="openEditAttendanceModal('${empId}', '${escapedName}', '${day.date}', '${day.day}')">
+        </i>`;
+    }
+    cellContentHTML += `</div>`;
+    return `<td class="${cls}">${cellContentHTML}</td>`;
+  }
+
+  // ==========================================================
+  // 🛑🛑 🛑 ส่วนควบคุม Modal การแก้ไขเวลา (Edit Logic) 🛑 🛑 🛑
+  // ==========================================================
+
+  // A. เปิด Modal และเติมข้อมูลเดิม
+  function openEditAttendanceModal(empId, empName, dateStr, day) {
+    const employee = attenCalendarCache.find(e => e.id == empId);
+    if(!employee) return;
+    const dayData = employee.days.find(d => d.date === dateStr);
+    
+    // ตั้งค่าหัวข้อตามรูป: "Edit Attendance Entry: [Name] - [Date]"
+    document.getElementById('editModalTitle').innerText = `Edit Attendance Entry: ${empName} - ${dayData.date_th}`;
+    document.getElementById('edit-empid').value = empId;
+    document.getElementById('edit-date').value = dateStr;
+    document.getElementById('edit-error').classList.add('d-none'); // ล้าง Error
+    
+    // เติมข้อมูลเดิมลงในฟอร์ม
+    document.getElementById('edit-status').value = dayData.detail.late > 0 ? 'สาย' : 'ปกติ'; // สมมติสถานะ
+    document.getElementById('edit-time-in').value = dayData.detail.in_raw || '';
+    document.getElementById('edit-time-out').value = dayData.detail.out_raw || '';
+    document.getElementById('edit-remarks').value = dayData.detail.remark || '';
+    
+    // เปิด Modal
+    var myModal = new Bootstrap5Modal(document.getElementById('editAttendanceModal'));
+    myModal.show();
+  }
+
+  // B. ยืนยันการบันทึกการแก้ไข (ส่งข้อมูลไป Code.gs)
+  function saveAttendanceEdit() {
+    const errorEl = document.getElementById('edit-error');
+    const btn = document.querySelector('#editAttendanceModal button.btn-success');
+    
+    // เตรียมข้อมูล
+    const data = {
+      empId: document.getElementById('edit-empid').value,
+      dateStr: document.getElementById('edit-date').value,
+      status: document.getElementById('edit-status').value,
+      timeIn: document.getElementById('edit-time-in').value,
+      timeOut: document.getElementById('edit-time-out').value,
+      remarks: document.getElementById('edit-remarks').value
+    };
+    
+    if(!data.timeIn || !data.timeOut) {
+       errorEl.innerText = 'กรุณากรอกเวลา เข้า และ ออก ให้ครบถ้วนค่ะ';
+       errorEl.classList.remove('d-none');
+       return;
+    }
+
+    // แสดงสถานะโหลด...
+    errorEl.classList.add('d-none');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...';
+
+    // ส่งไป Code.gs
+    google.script.run.withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-save me-1"></i>Save Changes';
+      
+      if(res.success) {
+        Bootstrap5Modal.getInstance(document.getElementById('editAttendanceModal')).hide();
+        // AppAlert มาจาก Index.html นะคะ
+        AppAlert.success('บันทึกสำเร็จ', `แก้ไขเวลาวันที่ ${res.date} เรียบร้อยแล้วค่ะ`);
+        loadAttendanceCalendar(); // โหลด Grid ใหม่เพื่อแสดงค่าที่แก้
+      } else {
+        errorEl.innerText = 'เกิดข้อผิดพลาด: ' + res.message;
+        errorEl.classList.remove('d-none');
+      }
+    }).updateDailyAttendanceFromGrid(data); // เรียกใช้ฟังก์ชันใหม่ใน Code.gs
+  }
+
+  // คลาสหลอกสำหรับ Bootstrap5 (ถ้า Index.html ยังไม่ได้โหลด bundle)
+  // ปกติถ้า Index.html ใส่ bundle.min.js ไว้แล้ว จะไม่ต้องใช้ส่วนนี้ค่ะ
+  var Bootstrap5Modal = typeof bootstrap !== 'undefined' ? bootstrap.Modal : class MockModal {
+    constructor(el) { this.el = el; }
+    show() { new bootstrap.Modal(this.el).show(); }
+    hide() { bootstrap.Modal.getInstance(this.el).hide(); }
+    static getInstance(el) { return bootstrap.Modal.getInstance(el); }
+  };
+</script>

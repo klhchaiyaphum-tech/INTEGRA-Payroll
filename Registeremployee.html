@@ -1,0 +1,74 @@
+<div id="page-register" class="page-section d-none">
+  <div class="container-fluid py-4">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+      <div class="bg-primary p-4 text-white text-center">
+        <h4 class="mb-0">ลงทะเบียนพนักงานใหม่</h4>
+        <p class="small opacity-75 mb-0">ถ่ายรูปและบันทึกพิกัดเพื่อเริ่มใช้งานระบบ</p>
+      </div>
+      <div class="card-body p-4 text-center">
+        <div class="position-relative d-inline-block mb-4">
+          <video id="video" width="300" height="300" autoplay playsinline class="rounded-circle border border-4 border-light shadow-sm" style="object-fit: cover; background: #000;"></video>
+          <canvas id="canvas" width="300" height="300" class="d-none"></canvas>
+          <img id="photo-preview" class="rounded-circle border border-4 border-primary shadow-sm d-none" width="300" height="300" style="object-fit: cover;">
+          <button type="button" onclick="takePhoto()" class="btn btn-primary rounded-circle position-absolute bottom-0 end-0 shadow" style="width: 50px; height: 50px;">
+            <i class="bi bi-camera-fill"></i>
+          </button>
+        </div>
+
+        <div id="location-status" class="alert alert-info small mb-4">
+          <i class="bi bi-geo-alt-fill me-2"></i>กำลังระบุพิกัดบ้านของคุณ...
+        </div>
+
+        <button id="btn-submit-reg" class="btn btn-success w-100 py-3 fw-bold rounded-pill shadow-sm" onclick="submitRegistration()" disabled>
+          บันทึกข้อมูลลงทะเบียน
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let userCoords = null;
+    let photoData = null;
+
+    // เปิดกล้องอัตโนมัติ
+    function initRegister() {
+      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(stream => { document.getElementById('video').srcObject = stream; })
+        .catch(err => { alert("กรุณาอนุญาตการเข้าถึงกล้องค่ะ"); });
+
+      navigator.geolocation.getCurrentPosition(pos => {
+        userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        document.getElementById('location-status').className = "alert alert-success small mb-4";
+        document.getElementById('location-status').innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>ตรวจพบพิกัดแล้ว: ${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)}`;
+        checkRegReady();
+      });
+    }
+
+    function takePhoto() {
+      const video = document.getElementById('video');
+      const canvas = document.getElementById('canvas');
+      const preview = document.getElementById('photo-preview');
+      canvas.getContext('2d').drawImage(video, 0, 0, 300, 300);
+      photoData = canvas.toDataURL('image/jpeg');
+      preview.src = photoData;
+      preview.classList.remove('d-none');
+      video.classList.add('d-none');
+      checkRegReady();
+    }
+
+    function checkRegReady() {
+      if(userCoords && photoData) document.getElementById('btn-submit-reg').disabled = false;
+    }
+
+    function submitRegistration() {
+      const btn = document.getElementById('btn-submit-reg');
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+
+      google.script.run.withSuccessHandler(res => {
+        AppAlert.success('ลงทะเบียนสำเร็จ', 'ข้อมูลของคุณถูกบันทึกเข้าระบบแล้วค่ะ');
+        showPage('page-employee-portal');
+      }).processRegistration({ photo: photoData, coords: userCoords });
+    }
+  </script>
+</div>

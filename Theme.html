@@ -1,0 +1,83 @@
+<style>
+  /* --- 1. นิยามชุดสีสำหรับ 3 ธีม --- */
+  
+  /* ธีมที่ 1: น้ำเงิน V.19 (ต้นฉบับ) */
+  body.theme-1 {
+    --primary-color: #3c8dbc;
+    --primary-hover: #367fa9;
+    --sidebar-bg: #222d32;
+    --sidebar-active: #1e282c;
+  }
+
+  /* ธีมที่ 2: เขียว INTEGRA */
+  body.theme-2 {
+    --primary-color: #28a745;
+    --primary-hover: #218838;
+    --sidebar-bg: #1e2d24;
+    --sidebar-active: #24342a;
+  }
+
+  /* ธีมที่ 3: ฟ้า Sky Blue */
+  body.theme-3 {
+    --primary-color: #00c0ef;
+    --primary-hover: #00add8;
+    --sidebar-bg: #1a2226;
+    --sidebar-active: #222d32;
+  }
+
+  /* --- 2. การนำตัวแปรไปใช้ (เพื่อไม่ให้ขัดแย้งกับ HTML อื่น) --- */
+  body { 
+    transition: background-color 0.3s, color 0.3s; 
+  }
+
+  /* แก้ไขสีปุ่มและองค์ประกอบหลักของ Bootstrap ให้วิ่งตามธีม */
+  .btn-primary, .bg-primary { 
+    background-color: var(--primary-color) !important; 
+    border-color: var(--primary-color) !important; 
+  }
+  .btn-primary:hover { 
+    background-color: var(--primary-hover) !important; 
+  }
+  .text-primary, .text-info { 
+    color: var(--primary-color) !important; 
+  }
+
+  /* ปรับแต่ง Sidebar ให้รองรับธีม */
+  .sidebar { background-color: var(--sidebar-bg) !important; }
+  .sidebar-link.active { 
+    background-color: var(--sidebar-active) !important; 
+    border-left: 3px solid var(--primary-color) !important; 
+    color: #fff !important;
+  }
+  .sidebar-header { background-color: rgba(0,0,0,0.1); }
+
+  /* เส้นขอบการ์ดตารางพนักงานและแผนก */
+  .table-card { border-top: 3px solid var(--primary-color) !important; }
+</style>
+
+<script>
+  /**
+   * ฟังก์ชันประกาศและอัปเดตธีม (The Hub)
+   * ทำหน้าที่ดึงค่าจาก localStorage มาใช้งาน
+   */
+  function syncSystemTheme() {
+    // อ่านค่าจากกระดานประกาศ (Default เป็น 1 ถ้ายังไม่มีค่า)
+    const activeTheme = localStorage.getItem('integra_theme_id') || '1';
+    
+    // ลบธีมเก่าและใส่ธีมใหม่ที่ Body
+    document.body.classList.remove('theme-1', 'theme-2', 'theme-3');
+    document.body.classList.add('theme-' + activeTheme);
+    
+    console.log('INTEGRA: ระบบใช้ชุดสีธีมที่ ' + activeTheme);
+  }
+
+  // สั่งให้รันทันทีที่เปิดหน้าจอ
+  window.addEventListener('DOMContentLoaded', syncSystemTheme);
+  
+  // สร้างตัวดักจับกรณีมีการเปลี่ยนธีมในหน้า Config (สำหรับหน้าจอที่เปิดค้างไว้)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'integra_theme_id') {
+      syncSystemTheme();
+    }
+  });
+</script>

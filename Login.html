@@ -1,0 +1,39 @@
+<div class="text-center mb-4">
+  <h3 class="fw-bold">INTEGRA V.76</h3>
+  <p class="text-muted small">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+</div>
+
+<form onsubmit="handleLogin(event)">
+  <div class="mb-3">
+    <label class="form-label small fw-bold">Username</label>
+    <input type="text" id="username" class="form-control" placeholder="ชื่อผู้ใช้งาน" required>
+  </div>
+  <div class="mb-4">
+    <label class="form-label small fw-bold">Password</label>
+    <input type="password" id="password" class="form-control" placeholder="รหัสผ่าน" required>
+  </div>
+  <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold">เข้าสู่ระบบ</button>
+</form>
+
+<script>
+  function handleLogin(e) {
+    e.preventDefault();
+    const u = document.getElementById('username').value;
+    const p = document.getElementById('password').value;
+    const btn = document.getElementById('btnLogin');
+
+    btn.disabled = true;
+    btn.innerText = 'กำลังตรวจสอบ...';
+
+    google.script.run.withSuccessHandler(res => {
+      if(res.success) {
+        // ✅ เรียกฟังก์ชันแยกทางในหน้า Index
+        loginSuccess(res); 
+      } else {
+        alert(res.message);
+        btn.disabled = false;
+        btn.innerText = 'เข้าสู่ระบบ';
+      }
+    }).verifyLogin(u, p);
+  }
+</script>

@@ -1,0 +1,47 @@
+<div id="page-employee-portal" class="page-section d-none">
+  <div class="container-fluid py-4">
+    <div class="d-flex align-items-center mb-4">
+      <div id="emp-profile-pic" class="rounded-circle border border-3 border-white shadow-sm" style="width: 70px; height: 70px; background: #ddd; background-size: cover;"></div>
+      <div class="ms-3">
+        <h4 class="mb-0 fw-bold" id="emp-welcome-name">สวัสดีค่ะ</h4>
+        <span class="badge bg-primary rounded-pill" id="emp-welcome-dept">แผนกของคุณ</span>
+      </div>
+    </div>
+
+    <div class="row g-2 mb-4">
+      <div class="col-4">
+        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
+          <div class="small text-muted">มางาน</div>
+          <div class="fw-bold text-success" id="emp-stat-present">0</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
+          <div class="small text-muted">สาย</div>
+          <div class="fw-bold text-warning" id="emp-stat-late">0</div>
+        </div>
+      </div>
+      <div class="col-4">
+        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
+          <div class="small text-muted">คงเหลือลา</div>
+          <div class="fw-bold text-info" id="emp-stat-leave">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="list-group shadow-sm rounded-4 overflow-hidden border-0">
+      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom" onclick="showPage('page-scan'); initScan();">
+        <i class="bi bi-qr-code-scan me-3 text-primary"></i>สแกนลงเวลาเข้า-ออก
+      </a>
+      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom">
+        <i class="bi bi-file-earmark-pdf me-3 text-danger"></i>ดูสลิปเงินเดือน (E-Slip)
+      </a>
+      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom">
+        <i class="bi bi-calendar-plus me-3 text-success"></i>แจ้งลา / ขอ OT
+      </a>
+      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0" onclick="showPage('page-register'); initRegister();">
+        <i class="bi bi-person-gear me-3 text-secondary"></i>อัปเดตข้อมูล / ลงทะเบียนรูป
+      </a>
+    </div>
+  </div>
+</div>

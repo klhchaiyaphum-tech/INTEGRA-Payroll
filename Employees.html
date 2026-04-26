@@ -1,0 +1,170 @@
+<div id="page-employees" class="d-none">
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: var(--primary-color) !important;">
+    <div>
+      <h3 class="mb-0 fw-bold text-primary"><i class="bi bi-people-fill"></i> ข้อมูลพนักงาน (Employees)</h3>
+      <div class="text-muted small">INTEGRA Hybrid | บริหารจัดการบุคลากรและการลงเวลา</div>
+    </div>
+    <button class="btn btn-primary shadow-sm fw-bold" onclick="openAddEmpModal()">
+      <i class="bi bi-person-plus-fill me-1"></i> เพิ่มพนักงานใหม่
+    </button>
+  </div>
+
+  <div class="card table-card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <span class="fw-bold text-secondary">พนักงานทั้งหมด: <span id="totalEmpCount" class="text-primary fs-5">0</span> คน</span>
+        <div class="input-group" style="width: 350px;">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+          <input type="text" id="empSearchInput" class="form-control border-start-0 bg-light" placeholder="ค้นหาชื่อ, รหัส หรือแผนก..." onkeyup="filterEmployees()">
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 border">
+          <thead class="table-light text-muted small">
+            <tr>
+              <th class="text-center" style="width: 60px;">รูป</th>
+              <th style="width: 110px;">รหัสพนักงาน</th>
+              <th>ชื่อ-นามสกุล / แผนก</th>
+              <th class="text-center">วันเกิด / อายุ</th>
+              <th class="text-center">เริ่มงาน / อายุงาน</th>
+              <th class="text-center">สถานะวันนี้</th>
+              <th class="text-center pe-4" style="width: 180px;">จัดการ / ระบบลา</th>
+            </tr>
+          </thead>
+          <tbody id="empTableBody">
+            <tr><td colspan="7" class="text-center py-5"><span class="spinner-border text-primary"></span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="profileImageModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0">
+      <div class="modal-header bg-dark text-white border-0">
+        <h6 class="modal-title"><i class="bi bi-person-bounding-box me-2"></i>รูปหน้าตรงพนักงาน</h6>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body text-center p-4 bg-dark">
+        <img id="viewProfileImg" src="" class="img-fluid rounded shadow" style="max-height: 450px;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let employeeCache = [];
+
+  function loadEmployees() {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        employeeCache = data;
+        renderEmployeeTable(data);
+        document.getElementById('totalEmpCount').innerText = data.length;
+      }).getEmployeeData(); 
+  }
+
+  function renderEmployeeTable(data) {
+    let html = '';
+    data.forEach(emp => {
+      // คำนวณอายุและอายุงาน (Logic รูปที่ 3)
+      const ageDetails = calculateDetailedAge(emp.dob);
+      const workDetails = calculateDetailedAge(emp.startDate);
+      
+      // Attendance Bridge
+      const statusToday = getAttendanceBadge(emp.statusToday);
+
+      html += `
+        <tr>
+          <td class="text-center">
+            <img src="${emp.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" 
+                 class="rounded-circle border cursor-pointer" width="38" height="38" 
+                 onclick="viewProfileImage('${emp.profileImg}')">
+          </td>
+          <td class="fw-bold text-primary">${emp.code}</td>
+          <td>
+            <div class="fw-bold">${emp.name}</div>
+            <div class="text-muted small">${emp.dept} | ${emp.position}</div>
+          </td>
+          <td class="text-center">
+            <div class="small fw-bold">${emp.dob || '-'}</div>
+            <div class="text-muted" style="font-size: 11px;">${ageDetails}</div>
+          </td>
+          <td class="text-center">
+            <div class="small fw-bold">${emp.startDate || '-'}</div>
+            <div class="text-info" style="font-size: 11px;">${workDetails}</div>
+          </td>
+          <td class="text-center">${statusToday}</td>
+          <td class="text-center pe-4">
+            <div class="btn-group btn-group-sm mb-1">
+              <button class="btn btn-outline-warning" onclick="editEmp('${emp.id}')"><i class="bi bi-pencil-square"></i></button>
+              <button class="btn btn-outline-info" onclick="openLeaveRequest('${emp.id}')" title="ขอลา"><i class="bi bi-calendar2-check"></i></button>
+              <button class="btn btn-outline-secondary" style="font-size: 10px;" onclick="confirmResign('${emp.id}')" title="แจ้งออก">ลาออก</button>
+            </div>
+            <div class="mt-1">
+              <button class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 11px;" onclick="printCert('${emp.id}')">
+                <i class="bi bi-file-earmark-pdf"></i> หนังสือรับรอง
+              </button>
+            </div>
+          </td>
+        </tr>`;
+    });
+    document.getElementById('empTableBody').innerHTML = html || '<tr><td colspan="7" class="text-center">ไม่พบข้อมูล</td></tr>';
+  }
+
+  function calculateDetailedAge(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+    try {
+      const parts = dateStr.split('/'); // คาดหวัง วว/ดด/ปปปป
+      const d = new Date(parts[2], parts[1] - 1, parts[0]);
+      const now = new Date();
+      let y = now.getFullYear() - d.getFullYear();
+      let m = now.getMonth() - d.getMonth();
+      if (m < 0) { y--; m += 12; }
+      return `${y} ปี ${m} เดือน`;
+    } catch(e) { return '-'; }
+  }
+
+  function getAttendanceBadge(status) {
+    const badges = {
+      'มาทำงาน': '<span class="badge bg-success-subtle text-success border border-success rounded-pill px-2">มาทำงาน</span>',
+      'สาย': '<span class="badge bg-warning-subtle text-warning border border-warning rounded-pill px-2">สาย</span>',
+      'ขาด': '<span class="badge bg-danger-subtle text-danger border border-danger rounded-pill px-2">ขาด</span>',
+      'ลา': '<span class="badge bg-info-subtle text-info border border-info rounded-pill px-2">ลา</span>'
+    };
+    return badges[status] || '<span class="badge bg-light text-muted border rounded-pill px-2">ยังไม่ลงเวลา</span>';
+  }
+
+  function viewProfileImage(url) {
+    if(!url) { AppAlert.error('ไม่พบรูปภาพ', 'กรุณาอัปโหลดรูปพนักงานก่อนค่ะ'); return; }
+    document.getElementById('viewProfileImg').src = url;
+    new bootstrap.Modal(document.getElementById('profileImageModal')).show();
+  }
+
+  function filterEmployees() {
+    const val = document.getElementById('empSearchInput').value.toLowerCase();
+    const filtered = employeeCache.filter(e => e.name.toLowerCase().includes(val) || e.code.toLowerCase().includes(val));
+    renderEmployeeTable(filtered);
+  }
+
+  // Observer โหลดข้อมูลอัตโนมัติ
+  const empObs = new MutationObserver(m => {
+    m.forEach(mu => { if(!mu.target.classList.contains('d-none')) loadEmployees(); });
+  });
+  window.addEventListener('DOMContentLoaded', () => {
+    const el = document.getElementById('page-employees');
+    if(el) empObs.observe(el, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>
+
+<style>
+  .bg-success-subtle { background-color: #d1e7dd; }
+  .bg-warning-subtle { background-color: #fff3cd; }
+  .bg-danger-subtle { background-color: #f8d7da; }
+  .bg-info-subtle { background-color: #cff4fc; }
+  .cursor-pointer { cursor: pointer; transition: 0.2s; }
+  .cursor-pointer:hover { transform: scale(1.1); }
+</style>

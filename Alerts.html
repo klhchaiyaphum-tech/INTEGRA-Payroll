@@ -1,0 +1,60 @@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+  // สร้างระบบแจ้งเตือนกลางชื่อ AppAlert
+  const AppAlert = {
+    
+    // 1. โชว์เครื่องหมายถูกตอนสำเร็จ (เด้งแล้วหายเอง)
+    success: function(title, timer = 1500) {
+      return Swal.fire({
+        icon: 'success',
+        title: title,
+        showConfirmButton: false,
+        timer: timer
+      });
+    },
+
+    // 2. โชว์กากบาทตอนเกิด Error
+    error: function(title, text) {
+      return Swal.fire({
+        icon: 'error',
+        title: title,
+        text: text
+      });
+    },
+
+    // 3. โชว์หน้าจอ Loading หมุนๆ บล็อคหน้าจอ
+    loading: function(title = 'กำลังประมวลผล...') {
+      return Swal.fire({
+        title: title,
+        allowOutsideClick: false,
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+    },
+
+    // 4. สั่งปิด Loading
+    close: function() {
+      Swal.close();
+    },
+
+    // 5. กล่องยืนยันการลบสีแดง
+    confirmDelete: function(itemName, onConfirmCallback) {
+      Swal.fire({
+        title: 'ยืนยันการลบ?',
+        html: `คุณต้องการลบ <b>"${itemName}"</b> ใช่หรือไม่?<br><small class="text-danger">ข้อมูลที่ลบแล้วจะไม่สามารถกู้คืนได้</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: '<i class="bi bi-trash"></i> ใช่, ลบทิ้งเลย!',
+        cancelButtonText: 'ยกเลิก'
+      }).then((result) => {
+        if (result.isConfirmed) {
+          onConfirmCallback(); // ทำงานฟังก์ชันที่ส่งมาถ้ากดยืนยัน
+        }
+      });
+    }
+  };
+</script>

@@ -1,0 +1,257 @@
+<div id="page-departments" class="page-section d-none">
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: var(--primary-color) !important; opacity: 0.8;">
+    <div>
+      <h3 class="mb-0 fw-bold text-primary"><i class="bi bi-building"></i> ข้อมูลแผนก (Departments)</h3>
+      <div class="text-muted small mt-1">ระบบจัดการโครงสร้างองค์กร (INTEGRA Hybrid)</div>
+    </div>
+    <button class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#addDeptModal">
+      <i class="bi bi-plus-lg fw-bold me-1"></i> เพิ่มแผนกใหม่
+    </button>
+  </div>
+
+  <div class="card table-card border-0 shadow-sm">
+    <div class="card-body p-4">
+      
+      <div class="row mb-3">
+        <div class="col-md-4 ms-auto">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="deptSearchInput" class="form-control border-start-0 bg-light" placeholder="ค้นหารหัส หรือ ชื่อแผนก..." onkeyup="filterDepartments()">
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 border">
+          <thead class="table-light text-muted">
+            <tr>
+              <th class="ps-4" style="width: 15%;">รหัสแผนก</th>
+              <th style="width: 25%;">ชื่อแผนก</th>
+              <th style="width: 30%;">รายละเอียด</th>
+              <th class="text-center" style="width: 15%;">จำนวนพนักงาน</th>
+              <th class="text-center" style="width: 15%;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="deptTableBody">
+            <tr><td colspan="5" class="text-center py-5"><span class="spinner-border spinner-border-sm text-primary"></span> กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="addDeptModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-primary"><i class="bi bi-plus-circle me-2"></i>เพิ่มแผนกใหม่</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="addDeptForm" onsubmit="submitAddDepartment(event)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">รหัสแผนก <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addDeptId" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ชื่อแผนก <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="addDeptName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">รายละเอียด</label>
+            <textarea class="form-control" id="addDeptDesc" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary" id="btnAddDept">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="editDeptModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-warning"><i class="bi bi-pencil-square me-2"></i>แก้ไขข้อมูลแผนก</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="editDeptForm" onsubmit="submitEditDepartment(event)">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">รหัสแผนก (ห้ามแก้ไข)</label>
+            <input type="text" class="form-control bg-light" id="editDeptId" readonly>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">ชื่อแผนก <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="editDeptName" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">รายละเอียด</label>
+            <textarea class="form-control" id="editDeptDesc" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-warning fw-bold" id="btnUpdateDept">อัปเดตข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  let allDepartmentsList = [];
+
+  // 1. โหลดข้อมูลแผนก
+  function loadDepartments() {
+    document.getElementById('deptTableBody').innerHTML = '<tr><td colspan="5" class="text-center py-5"><span class="spinner-border spinner-border-sm text-primary"></span> กำลังโหลดข้อมูล...</td></tr>';
+    
+    google.script.run
+      .withFailureHandler(function(err) {
+        document.getElementById('deptTableBody').innerHTML = `<tr><td colspan="5" class="text-center text-danger py-4">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+      })
+      .withSuccessHandler(function(data) {
+        allDepartmentsList = data;
+        renderDeptTable(data);
+      }).getDepartmentData();
+  }
+
+  // 2. วาดตาราง (Render)
+  function renderDeptTable(data) {
+    let html = '';
+    if(!data || data.length === 0) {
+      html = '<tr><td colspan="5" class="text-center py-4 text-muted">ไม่พบข้อมูลแผนก</td></tr>';
+    } else {
+      data.forEach(dept => {
+        html += `
+          <tr>
+            <td class="ps-4 fw-bold text-primary">${dept.id}</td>
+            <td class="fw-bold">${dept.name}</td>
+            <td class="text-muted small">${dept.description || '-'}</td>
+            <td class="text-center">
+              <span class="badge bg-primary bg-opacity-10 text-primary border border-primary rounded-pill px-3 py-2">
+                ${dept.count || 0} คน
+              </span>
+            </td>
+            <td class="text-center">
+              <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditDeptModal('${dept.id}')" title="แก้ไข">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteDept('${dept.id}')" title="ลบ">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+      });
+    }
+    document.getElementById('deptTableBody').innerHTML = html;
+  }
+
+  // 3. ระบบค้นหา (Real-time)
+  function filterDepartments() {
+    const txt = document.getElementById('deptSearchInput').value.toLowerCase();
+    const filtered = allDepartmentsList.filter(dept => {
+      return (dept.id && String(dept.id).toLowerCase().includes(txt)) || 
+             (dept.name && String(dept.name).toLowerCase().includes(txt));
+    });
+    renderDeptTable(filtered);
+  }
+
+  // 4. บันทึกแผนกใหม่ (ใช้ AppAlert)
+  function submitAddDepartment(event) {
+    event.preventDefault();
+    var btn = document.getElementById('btnAddDept');
+    var id = document.getElementById('addDeptId').value;
+    var name = document.getElementById('addDeptName').value;
+    var desc = document.getElementById('addDeptDesc').value;
+
+    AppAlert.loading('กำลังบันทึกข้อมูล...'); // ขึ้นหน้าจอหมุนๆ
+    btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        if(res && res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('addDeptModal')).hide();
+          document.getElementById('addDeptForm').reset();
+          AppAlert.success('เพิ่มแผนกเรียบร้อย!'); // ขึ้นติ๊กถูก
+          loadDepartments();
+        } else {
+          AppAlert.error('บันทึกไม่สำเร็จ', res ? res.message : 'Unknown error');
+        }
+      })
+      .addDepartment(id, name, desc); // <-- ต้องมีฟังก์ชันนี้ใน Code.gs นะคะ
+  }
+
+  // 5. เปิดหน้าต่างแก้ไข
+  function openEditDeptModal(id) {
+    var dept = allDepartmentsList.find(d => d.id == id);
+    if(dept) {
+      document.getElementById('editDeptId').value = dept.id;
+      document.getElementById('editDeptName').value = dept.name;
+      document.getElementById('editDeptDesc').value = dept.description || '';
+      new bootstrap.Modal(document.getElementById('editDeptModal')).show();
+    }
+  }
+
+  // 6. อัปเดตแผนก (ใช้ AppAlert)
+  function submitEditDepartment(event) {
+    event.preventDefault();
+    var btn = document.getElementById('btnUpdateDept');
+    var id = document.getElementById('editDeptId').value;
+    var name = document.getElementById('editDeptName').value;
+    var desc = document.getElementById('editDeptDesc').value;
+
+    AppAlert.loading('กำลังอัปเดตข้อมูล...');
+    btn.disabled = true;
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        btn.disabled = false;
+        if(res && res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('editDeptModal')).hide();
+          AppAlert.success('อัปเดตข้อมูลเรียบร้อย!');
+          loadDepartments();
+        } else {
+          AppAlert.error('อัปเดตไม่สำเร็จ', res ? res.message : 'Unknown error');
+        }
+      })
+      .updateDepartment(id, name, desc); // <-- ต้องมีฟังก์ชันนี้ใน Code.gs นะคะ
+  }
+
+  // 7. ลบแผนก (ใช้ AppAlert กล่องแดง)
+  function deleteDept(id) {
+    var dept = allDepartmentsList.find(d => d.id == id);
+    var deptName = dept ? dept.name : ('รหัส ' + id);
+
+    // เรียกใช้กล่องยืนยันการลบที่สวยงาม
+    AppAlert.confirmDelete(deptName, function() {
+      AppAlert.loading('กำลังลบข้อมูลแผนก...');
+      google.script.run
+        .withSuccessHandler(function(res) {
+          if(res && res.success) {
+            AppAlert.success('ลบแผนกเรียบร้อยแล้วค่ะ');
+            loadDepartments();
+          } else {
+            AppAlert.error('ลบไม่สำเร็จ', res ? res.message : 'กรุณาลองใหม่อีกครั้ง');
+          }
+        })
+        .deleteDepartment(id); // <-- ต้องมีฟังก์ชันนี้ใน Code.gs นะคะ
+    });
+  }
+
+  // Auto-load เมื่อกดเมนูแผนก
+  const deptObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (!mutation.target.classList.contains('d-none')) { loadDepartments(); }
+    });
+  });
+  window.addEventListener('DOMContentLoaded', () => {
+    const deptPage = document.getElementById('page-departments');
+    if(deptPage) deptObserver.observe(deptPage, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>

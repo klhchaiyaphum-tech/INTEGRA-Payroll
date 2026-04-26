@@ -1,0 +1,233 @@
+<div id="page-salary-items" class="page-section d-none">
+  <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3" style="border-color: var(--primary-color) !important; opacity: 0.8;">
+    <div>
+      <h3 class="mb-0 fw-bold text-primary"><i class="bi bi-wallet2"></i> ประเภทรายการรับ/หัก (Salary Items)</h3>
+      <div class="text-muted small mt-1">จัดการประเภทรายได้และค่าล่วงเวลา (INTEGRA Hybrid)</div>
+    </div>
+    <button class="btn btn-primary shadow-sm" onclick="openAddSITypeModal()">
+      <i class="bi bi-plus-lg fw-bold me-1"></i> เพิ่มประเภทรายการ
+    </button>
+  </div>
+
+  <div class="card table-card border-0 shadow-sm mb-4">
+    <div class="card-body p-4">
+      
+      <div class="row mb-3">
+        <div class="col-md-4 ms-auto">
+          <div class="input-group">
+            <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+            <input type="text" id="siSearchInput" class="form-control border-start-0 bg-light" placeholder="ค้นหาชื่อรายการ..." onkeyup="filterSITypes()">
+          </div>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 border">
+          <thead class="table-light text-muted">
+            <tr>
+              <th class="text-center" style="width: 10%;">ID</th>
+              <th style="width: 25%;">ชื่อรายการ</th>
+              <th class="text-center" style="width: 15%;">ประเภท</th>
+              <th style="width: 25%;">คำอธิบาย</th>
+              <th class="text-center" style="width: 10%;">สถานะ</th>
+              <th class="text-center pe-4" style="width: 15%;">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="siTypeTableBody">
+            <tr><td colspan="6" class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm text-primary"></span> กำลังโหลดข้อมูล...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="siTypeModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-primary" id="siTypeModalTitle">เพิ่มประเภทรายการ</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form id="siTypeForm" onsubmit="submitSIType(event)">
+        <div class="modal-body">
+          <input type="hidden" id="siTypeId">
+          
+          <div class="mb-3">
+            <label class="form-label">ชื่อรายการ <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" id="siTypeName" placeholder="เช่น เงินเดือน, OT, โบนัส" required>
+          </div>
+          
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">ประเภทรายการ <span class="text-danger">*</span></label>
+              <select class="form-select" id="siTypeCat" required>
+                <option value="รายรับ">รายรับ (Income)</option>
+                <option value="รายหัก">รายหัก (Deduction)</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">สถานะการใช้งาน</label>
+              <select class="form-select" id="siTypeStatus">
+                <option value="true">เปิดใช้งาน (Active)</option>
+                <option value="false">ระงับ (Inactive)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">คำอธิบายรายละเอียด</label>
+            <textarea class="form-control" id="siTypeDesc" rows="2" placeholder="อธิบายเพิ่มเติมเกี่ยวกับรายการนี้..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
+          <button type="submit" class="btn btn-primary fw-bold" id="btnSaveSIType">บันทึกข้อมูล</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+  let siTypeList = [];
+
+  // 1. โหลดข้อมูล
+  function loadSalaryItemTypes() {
+    document.getElementById('siTypeTableBody').innerHTML = '<tr><td colspan="6" class="text-center py-5"><span class="spinner-border spinner-border-sm text-primary"></span> กำลังโหลดข้อมูล...</td></tr>';
+    google.script.run
+      .withFailureHandler(function(err) {
+        document.getElementById('siTypeTableBody').innerHTML = `<tr><td colspan="6" class="text-center text-danger py-4">เกิดข้อผิดพลาด: ${err.message}</td></tr>`;
+      })
+      .withSuccessHandler(function(data) {
+        siTypeList = data;
+        renderSITypeTable(data);
+      }).getSalaryItemTypes(); // <-- ต้องแน่ใจว่าใน Code.gs มีฟังก์ชันนี้นะคะ!
+  }
+
+  // 2. วาดตาราง
+  function renderSITypeTable(data) {
+    let html = '';
+    if(!data || data.length === 0) {
+      html = '<tr><td colspan="6" class="text-center py-4 text-muted">ไม่พบข้อมูลรายการรับ/หัก</td></tr>';
+    } else {
+      data.forEach(item => {
+        // แปลงสถานะ TRUE/FALSE จาก Sheet ให้เป็นป้ายสวยๆ
+        let isAct = (String(item.isActive).toLowerCase() === 'true');
+        let statusBadge = isAct ? 
+          '<span class="badge bg-success bg-opacity-10 text-success border border-success rounded-pill px-2">ใช้งาน</span>' : 
+          '<span class="badge bg-danger bg-opacity-10 text-danger border border-danger rounded-pill px-2">ระงับ</span>';
+        
+        let typeColor = item.type === 'รายรับ' ? 'text-success' : 'text-danger';
+
+        html += `
+          <tr>
+            <td class="text-center text-muted fw-bold">${item.id}</td>
+            <td class="fw-bold text-dark">${item.name}</td>
+            <td class="text-center fw-bold ${typeColor}">${item.type}</td>
+            <td class="text-muted small">${item.description || '-'}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center pe-4">
+              <button class="btn btn-sm btn-outline-warning me-1" onclick="openEditSITypeModal('${item.id}')" title="แก้ไข">
+                <i class="bi bi-pencil-square"></i>
+              </button>
+              <button class="btn btn-sm btn-outline-danger" onclick="deleteSIType('${item.id}', '${item.name}')" title="ลบ">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
+          </tr>`;
+      });
+    }
+    document.getElementById('siTypeTableBody').innerHTML = html;
+  }
+
+  // 3. ค้นหาแบบ Real-time
+  function filterSITypes() {
+    const txt = document.getElementById('siSearchInput').value.toLowerCase();
+    const filtered = siTypeList.filter(item => {
+      return (item.name && String(item.name).toLowerCase().includes(txt)) || 
+             (item.type && String(item.type).toLowerCase().includes(txt));
+    });
+    renderSITypeTable(filtered);
+  }
+
+  // 4. เปิดหน้าต่างเพิ่ม
+  function openAddSITypeModal() {
+    document.getElementById('siTypeForm').reset();
+    document.getElementById('siTypeId').value = '';
+    document.getElementById('siTypeModalTitle').innerHTML = '<i class="bi bi-plus-circle me-2"></i>เพิ่มประเภทรายการ';
+    new bootstrap.Modal(document.getElementById('siTypeModal')).show();
+  }
+
+  // 5. เปิดหน้าต่างแก้ไข
+  function openEditSITypeModal(id) {
+    let item = siTypeList.find(d => String(d.id) === String(id));
+    if(item) {
+      document.getElementById('siTypeId').value = item.id;
+      document.getElementById('siTypeName').value = item.name;
+      document.getElementById('siTypeCat').value = item.type;
+      document.getElementById('siTypeDesc').value = item.description || '';
+      document.getElementById('siTypeStatus').value = String(item.isActive).toLowerCase() === 'true' ? 'true' : 'false';
+      
+      document.getElementById('siTypeModalTitle').innerHTML = '<i class="bi bi-pencil-square me-2 text-warning"></i>แก้ไขรายการ';
+      new bootstrap.Modal(document.getElementById('siTypeModal')).show();
+    }
+  }
+
+  // 6. บันทึกข้อมูล (เชื่อม AppAlert)
+  function submitSIType(event) {
+    event.preventDefault();
+    AppAlert.loading('กำลังบันทึกข้อมูล...');
+    
+    let isEditMode = document.getElementById('siTypeId').value !== "";
+    let data = {
+      name: document.getElementById('siTypeName').value,
+      type: document.getElementById('siTypeCat').value,
+      description: document.getElementById('siTypeDesc').value,
+      isActive: document.getElementById('siTypeStatus').value
+    };
+
+    if (isEditMode) {
+      let id = document.getElementById('siTypeId').value;
+      google.script.run.withSuccessHandler(handleSuccess).updateSalaryItemType(id, data);
+    } else {
+      google.script.run.withSuccessHandler(handleSuccess).addSalaryItemType(data);
+    }
+
+    function handleSuccess(res) {
+      if(res.success) {
+        bootstrap.Modal.getInstance(document.getElementById('siTypeModal')).hide();
+        AppAlert.success('บันทึกข้อมูลเรียบร้อย!');
+        loadSalaryItemTypes();
+      } else {
+        AppAlert.error('บันทึกไม่สำเร็จ', res.message);
+      }
+    }
+  }
+
+  // 7. ลบข้อมูล (เชื่อม AppAlert)
+  function deleteSIType(id, name) {
+    AppAlert.confirmDelete(name, function() {
+      AppAlert.loading('กำลังลบข้อมูล...');
+      google.script.run.withSuccessHandler(function(res) {
+        if(res.success) {
+          AppAlert.success('ลบข้อมูลเรียบร้อย!');
+          loadSalaryItemTypes();
+        } else {
+          AppAlert.error('ลบไม่สำเร็จ', res.message);
+        }
+      }).deleteSalaryItemType(id);
+    });
+  }
+
+  // ตัวกระตุ้น (Observer) ที่หายไปใน V.19: ทำให้ข้อมูลโหลดอัตโนมัติเมื่อกดเมนู
+  const siObserver = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (!mutation.target.classList.contains('d-none')) { loadSalaryItemTypes(); }
+    });
+  });
+  window.addEventListener('DOMContentLoaded', () => {
+    const page = document.getElementById('page-salary-items');
+    if(page) siObserver.observe(page, { attributes: true, attributeFilter: ['class'] });
+  });
+</script>

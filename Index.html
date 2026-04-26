@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+  <?!= include('Theme'); ?>
+  <style>
+    body { margin: 0; padding: 0; background: #ecf0f5; overflow: hidden; font-family: 'Sarabun', sans-serif; }
+    .wrapper { display: flex; width: 100vw; height: 100vh; }
+    .sidebar { width: 250px; min-width: 250px; background: #222d32; color: white; height: 100vh; flex-shrink: 0; }
+    .sidebar-header { padding: 20px; background: #1a2226; text-align: center; }
+    .nav-label { padding: 12px 20px 5px 20px; font-size: 11px; color: #4b646f; background: #1a2226; text-transform: uppercase; font-weight: bold; }
+    .sidebar-link { display: block; padding: 12px 20px; color: #b8c7ce; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; cursor: pointer; }
+    .sidebar-link:hover, .sidebar-link.active { background: #1e282c; color: white; border-left: 3px solid #3c8dbc; }
+    #main-content { flex-grow: 1; overflow-y: auto; padding: 25px; background: #ecf0f5; }
+    #login-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #222d32; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body class="theme-1">
+
+  <div id="login-mask">
+    <div class="card shadow-lg border-0" style="width: 100%; max-width: 400px; border-radius: 15px;">
+      <div class="card-body p-5">
+        <?!= include('Login'); ?>
+      </div>
+    </div>
+  </div>
+
+  <div id="main-app" class="wrapper d-none">
+    
+    <div id="sidebar-admin" class="sidebar shadow d-none">
+      <div class="sidebar-header"><h5 class="mb-0 fw-bold">INTEGRA ADMIN</h5></div>
+      <div class="nav-label">เมนูหลัก</div>
+      <a class="sidebar-link active" onclick="showPage('page-dashboard', this)"><i class="bi bi-speedometer2 me-2"></i> แดชบอร์ด</a>
+      
+      <div class="nav-label">จัดการข้อมูล</div>
+      <a class="sidebar-link" onclick="showPage('page-employees', this)"><i class="bi bi-people me-2"></i> พนักงาน</a>
+      
+      <div class="nav-label">ระบบเงินเดือน (Flow)</div>
+      <a class="sidebar-link" onclick="showPage('page-attendance', this)"><i class="bi bi-calendar-check me-2"></i> 1. ตารางลงเวลา</a>
+      <a class="sidebar-link" onclick="showPage('page-payroll', this)"><i class="bi bi-cash-stack me-2"></i> 2. คำนวณเงินเดือน</a>
+      <a class="sidebar-link" onclick="showPage('page-salary-records', this)"><i class="bi bi-file-earmark-text me-2"></i> 3. ประวัติการจ่ายเงิน</a>
+      
+      <div class="nav-label">การตั้งค่า</div>
+      <a class="sidebar-link" onclick="showPage('page-config', this)"><i class="bi bi-gear me-2"></i> ตั้งค่า</a>
+    </div>
+
+    <div id="sidebar-staff" class="sidebar shadow d-none">
+      <div class="sidebar-header"><h5 class="mb-0 fw-bold">EMPLOYEE HUB</h5></div>
+      <div class="nav-label">เมนูพนักงาน</div>
+      <a class="sidebar-link active" onclick="showPage('page-employee-portal', this)"><i class="bi bi-house-heart me-2"></i> หน้าแรกของฉัน</a>
+      <a class="sidebar-link" onclick="showPage('page-scan', this)"><i class="bi bi-qr-code-scan me-2"></i> สแกนลงเวลา</a>
+    </div>
+
+    <div id="main-content">
+      <div id="page-dashboard" class="page-section d-none"><?!= include('Dashboard'); ?></div>
+      <div id="page-employees" class="page-section d-none"><?!= include('Employees'); ?></div>
+      
+      <div id="page-attendance" class="page-section d-none"><?!= include('Attendance'); ?></div>
+      <div id="page-payroll" class="page-section d-none"><?!= include('Payroll'); ?></div>
+      <div id="page-salary-records" class="page-section d-none"><?!= include('Salary_records'); ?></div>
+      
+      <div id="page-employee-portal" class="page-section d-none"><?!= include('ForAttenemployee'); ?></div>
+      <div id="page-scan" class="page-section d-none"><?!= include('Scanemployee'); ?></div>
+      <div id="page-register" class="page-section d-none"><?!= include('Registeremployee'); ?></div>
+      
+      <div id="page-config" class="page-section d-none"><?!= include('Config'); ?></div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // 🚀 ฟังก์ชันเปลี่ยนหน้า (SPA)
+    function showPage(pageId, el) {
+      // ซ่อนทุกหน้าก่อน
+      document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
+      // เปิดหน้าเป้าหมาย
+      const target = document.getElementById(pageId);
+      if(target) {
+        target.classList.remove('d-none');
+        // ถ้าเข้าหน้า Payroll ให้ดึงข้อมูลทันที (Optional)
+        if(pageId === 'page-payroll') { /* runPayroll(); */ }
+      }
+      
+      // อัปเดตสถานะเมนูใน Sidebar
+      if(el) {
+        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+        el.classList.add('active');
+      }
+    }
+
+    // 💰 ฟังก์ชันคำนวณเงินเดือน
+    function runPayroll() {
+      const month = 4; // เมษายน
+      const year = 2026;
+      google.script.run.withSuccessHandler(function(data) {
+        let html = '';
+        data.forEach(item => {
+          html += `
+            <div class="col-md-4">
+              <div class="card border-0 shadow-sm p-3 rounded-4 mb-3">
+                <div class="fw-bold text-primary">${item.name}</div>
+                <div class="small">ยอดสุทธิ: <span class="fs-5 text-dark">฿${item.net.toLocaleString()}</span></div>
+              </div>
+            </div>`;
+        });
+        const target = document.getElementById('payroll-result');
+        if(target) target.innerHTML = html;
+      }).calculateMonthlySalary(month, year); // เรียกใช้ฟังก์ชันใน Code.gs
+    }
+
+    // ✅ เมื่อ Login สำเร็จ
+    function loginSuccess(res) {
+      document.getElementById('login-mask').classList.add('d-none');
+      document.getElementById('main-app').classList.remove('d-none');
+      
+      if(res.role === 'admin' || res.role === 'approver') {
+        document.getElementById('sidebar-admin').classList.remove('d-none');
+        showPage('page-dashboard');
+        if(typeof updateDashboard === 'function') updateDashboard();
+      } else {
+        document.getElementById('sidebar-staff').classList.remove('d-none');
+        showPage('page-employee-portal');
+      }
+    }
+  </script>
+</body>
+</html>
