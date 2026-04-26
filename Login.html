@@ -1,39 +1,55 @@
-<div class="text-center mb-4">
-  <h3 class="fw-bold">INTEGRA V.76</h3>
-  <p class="text-muted small">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
-</div>
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <style>
+    body { background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); height: 100vh; display: flex; align-items: center; justify-content: center; font-family: 'Sarabun', sans-serif; }
+    .login-card { width: 400px; border: none; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); overflow: hidden; }
+    .btn-portal { transition: all 0.3s; height: 60px; font-weight: bold; }
+    .btn-portal:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div class="card login-card p-4">
+    <div class="text-center mb-4">
+      <h3 class="fw-bold text-primary">INTEGRA Hybrid</h3>
+      <p class="text-muted small">V.78.6 Recovery System</p>
+    </div>
+    
+    <div class="d-grid gap-3">
+      <button class="btn btn-outline-primary btn-portal d-flex align-items-center justify-content-center" onclick="goToPortal('employee')">
+        <i class="bi bi-person-bounding-box fs-4 me-2"></i> พนักงาน (สแกนใบหน้า)
+      </button>
+      
+      <div class="hr-text text-center text-muted my-2"><small>หรือ</small></div>
 
-<form onsubmit="handleLogin(event)">
-  <div class="mb-3">
-    <label class="form-label small fw-bold">Username</label>
-    <input type="text" id="username" class="form-control" placeholder="ชื่อผู้ใช้งาน" required>
+      <div class="mb-3">
+        <label class="form-label small fw-bold">Admin Login</label>
+        <input type="password" id="admin-pass" class="form-control rounded-pill text-center" placeholder="ใส่รหัสผ่านเพื่อจัดการระบบ">
+      </div>
+      <button class="btn btn-primary btn-portal" onclick="adminLogin()">
+        <i class="bi bi-shield-lock me-2"></i> เข้าสู่ส่วนจัดการ (Management)
+      </button>
+    </div>
   </div>
-  <div class="mb-4">
-    <label class="form-label small fw-bold">Password</label>
-    <input type="password" id="password" class="form-control" placeholder="รหัสผ่าน" required>
-  </div>
-  <button type="submit" id="btnLogin" class="btn btn-primary w-100 py-2 fw-bold">เข้าสู่ระบบ</button>
-</form>
 
-<script>
-  function handleLogin(e) {
-    e.preventDefault();
-    const u = document.getElementById('username').value;
-    const p = document.getElementById('password').value;
-    const btn = document.getElementById('btnLogin');
-
-    btn.disabled = true;
-    btn.innerText = 'กำลังตรวจสอบ...';
-
-    google.script.run.withSuccessHandler(res => {
-      if(res.success) {
-        // ✅ เรียกฟังก์ชันแยกทางในหน้า Index
-        loginSuccess(res); 
+  <script>
+    function adminLogin() {
+      const pass = document.getElementById('admin-pass').value;
+      if(pass === "1234") { // คุณหนุ่มเปลี่ยนรหัสได้ที่นี่นะคะ
+        Swal.fire({ icon: 'success', title: 'ยินดีต้อนรับ Master Admin', timer: 1500, showConfirmButton: false })
+        .then(() => { window.top.location.href = "<?= ScriptApp.getService().getUrl() ?>?page=admin"; });
       } else {
-        alert(res.message);
-        btn.disabled = false;
-        btn.innerText = 'เข้าสู่ระบบ';
+        Swal.fire('รหัสผ่านไม่ถูกต้อง', 'กรุณาลองใหม่อีกครั้งค่ะ', 'error');
       }
-    }).verifyLogin(u, p);
-  }
-</script>
+    }
+    
+    function goToPortal(type) {
+      window.top.location.href = "<?= ScriptApp.getService().getUrl() ?>?page=" + type;
+    }
+  </script>
+</body>
+</html>
