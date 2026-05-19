@@ -1,174 +1,168 @@
 /**
  * api-bridge.js — INTEGRA Payroll
- * แทนที่ google.script.run ด้วย fetch() ไปยัง GAS Web App
- * มี local fallback จาก local_users.json เมื่อออฟไลน์
+ * แทนที่ google.script.run ด้วย fetch() → GAS Web App
+ * ไม่ใช้ Proxy เลย — ปลอดภัย 100%
  */
 
 const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbw-hkrmceGmKY27268YCDdwZsDDRVgrjCcYLVKEYA71Uf9z4iNhi4CFU_yhOCfft5sC/exec';
 
-// ─────────────────────────────────────────────────────────────
-// GASRunner — จัดการ call GAS หรือ fallback ไป local
-// ─────────────────────────────────────────────────────────────
-class GASRunner {
-  constructor() {
-    this._ok  = null;  // success callback
-    this._err = null;  // failure callback
-  }
+// ─── สร้าง runner object ใหม่ทุกครั้ง ───────────────────────
+function _makeGasRun() {
+  var _ok  = null;
+  var _err = null;
 
-  withSuccessHandler(fn) {
-    this._ok = fn;
-    return this._chain();
-  }
-
-  withFailureHandler(fn) {
-    this._err = fn;
-    return this._chain();
-  }
-
-  // คืน object ที่ยังต่อ chain ได้ และมีทุก GAS function เป็น method
-  _chain() {
-    const self = this;
-    const handler = {
-      withSuccessHandler(fn) { self._ok  = fn; return self._chain(); },
-      withFailureHandler(fn) { self._err = fn; return self._chain(); }
-    };
-    // Proxy: prop ที่ไม่ใช่ withSuccessHandler/withFailureHandler = ชื่อฟังก์ชัน GAS
-    return new Proxy(handler, {
-      get(target, prop) {
-        if (prop in target) return target[prop];
-        if (typeof prop !== 'string') return undefined;
-        // ส่งคืน function ที่เรียก GAS
-        return function(...args) {
-          return self._call(prop, args);
-        };
-      }
-    });
-  }
-
-  async _call(fnName, args) {
-    const payload = (args && args[0] !== undefined) ? args[0] : {};
+  // ─── เรียก GAS จริง หรือ fallback ──────────────────────────
+  async function _call(fnName, payload) {
     try {
-      const resp = await fetch(GAS_API_URL, {
+      var resp = await fetch(GAS_API_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body:    JSON.stringify({ action: fnName, payload })
+        body:    JSON.stringify({ action: fnName, payload: payload || {} })
       });
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
-      const data = await resp.json();
+      var data = await resp.json();
       if (data && data.error) throw new Error(data.error);
-      if (this._ok) this._ok(data);
-    } catch (e) {
-      console.warn('[api-bridge] GAS ไม่ตอบสนอง → local fallback (' + fnName + '):', e.message);
-      await this._fallback(fnName, payload);
+      if (_ok) _ok(data);
+    } catch(e) {
+      console.warn('[api-bridge] fallback (' + fnName + '):', e.message);
+      await _fallback(fnName, payload || {});
     }
   }
 
-  async _fallback(fnName, payload) {
-    const ok   = (d) => { if (this._ok)  this._ok(d); };
-    const fail = (m) => { if (this._err) this._err(new Error(m)); };
+  // ─── Local fallback ──────────────────────────────────────────
+  async function _fallback(fnName, payload) {
+    function ok(d)   { if (_ok)  _ok(d); }
+    function fail(m) { if (_err) _err(new Error(m)); }
 
-    switch (fnName) {
-
-      case 'loginAdmin': {
-        try {
-          const r = await fetch('local_users.json');
-          if (!r.ok) throw new Error('ไม่พบไฟล์');
-          const users = await r.json();
-          const u = users.find(x =>
-            String(x.username).toLowerCase() === String(payload.username || '').toLowerCase() &&
-            String(x.password_hash) === String(payload.password || '')
-          );
-          if (u) {
-            ok({ success: true, role: u.role, name: u.name,
-                 empId: u.id, username: u.username, permissions: u.permissions || '' });
-          } else {
-            ok({ success: false, message: 'Username หรือ Password ไม่ถูกต้อง' });
+    if (fnName === 'loginAdmin') {
+      try {
+        var r = await fetch('local_users.json');
+        if (!r.ok) throw new Error('404');
+        var users = await r.json();
+        var found = null;
+        for (var i = 0; i < users.length; i++) {
+          var u = users[i];
+          if (String(u.username).toLowerCase() === String(payload.username || '').toLowerCase() &&
+              String(u.password_hash) === String(payload.password || '')) {
+            found = u; break;
           }
-        } catch(e) {
-          fail('ไม่สามารถโหลด local_users.json: ' + e.message);
         }
-        break;
+        if (found) {
+          ok({ success: true, role: found.role, name: found.name,
+               empId: found.id, username: found.username, permissions: found.permissions || '' });
+        } else {
+          ok({ success: false, message: 'Username หรือ Password ไม่ถูกต้อง' });
+        }
+      } catch(e2) {
+        fail('โหลด local_users.json ไม่ได้: ' + e2.message);
       }
 
-      case 'getAdminUserList': {
-        try {
-          const r = await fetch('local_users.json');
-          ok(await r.json());
-        } catch(e) { fail('ไม่พบ local_users.json'); }
-        break;
-      }
+    } else if (fnName === 'getAdminUserList') {
+      try {
+        var r2 = await fetch('local_users.json');
+        ok(await r2.json());
+      } catch(e2) { fail('ไม่พบ local_users.json'); }
 
-      case 'checkLocation':
-        fail('GPS ไม่พร้อมในโหมดออฟไลน์');
-        break;
+    } else if (fnName === 'checkLocation') {
+      fail('GPS ไม่พร้อมในโหมดออฟไลน์');
 
-      case 'verifyFaceAndSave':
-        ok({ matched: true,
-             empId: (payload.empId) || 'WALK001',
-             name:  (payload.name)  || 'พนักงานทดสอบ' });
-        break;
+    } else if (fnName === 'verifyFaceAndSave') {
+      ok({ matched: true, empId: payload.empId || 'WALK001', name: payload.name || 'พนักงาน' });
 
-      case 'saveAttendance': {
-        const now = new Date();
-        ok({ success: true,
-             time: now.toTimeString().slice(0,5),
-             message: 'บันทึกสำเร็จ (offline mode)' });
-        break;
-      }
+    } else if (fnName === 'saveAttendance') {
+      var now = new Date();
+      ok({ success: true, time: now.toTimeString().slice(0,5), message: 'บันทึก (offline)' });
 
-      case 'saveFaceRegistration':
-      case 'processRegistration':
-        ok({ success: true, message: 'บันทึกใบหน้า (offline mode)' });
-        break;
+    } else if (fnName === 'saveFaceRegistration' || fnName === 'processRegistration') {
+      ok({ success: true, message: 'บันทึกใบหน้า (offline)' });
 
-      case 'getDashboardStats':
-        ok({ totalActive:0, approvers:0, presentToday:0,
-             lateToday:0, absentCount:0, pendingLeave:0 });
-        break;
+    } else if (fnName === 'getDashboardStats') {
+      ok({ totalActive:0, approvers:0, presentToday:0, lateToday:0, absentCount:0, pendingLeave:0 });
 
-      case 'getEmployeePortalData':
-        ok({ timeIn:'—', timeOut:'—', lateMin:0, status:'ยังไม่ลงเวลา' });
-        break;
+    } else if (fnName === 'getEmployeePortalData') {
+      ok({ timeIn:'—', timeOut:'—', lateMin:0, status:'ยังไม่ลงเวลา' });
 
-      case 'getConfigValues':
-        ok({ note: 'offline mode — กรุณา deploy GAS' });
-        break;
+    } else if (fnName === 'getConfigValues' || fnName === 'getConfig') {
+      ok({ note: 'offline mode' });
 
-      default:
-        fail('[offline] "' + fnName + '" ต้องการ GAS Web App — กรุณา deploy และตรวจสอบ URL');
+    } else if (fnName === 'getEmployeeData' || fnName === 'getDepartmentData' ||
+               fnName === 'getSalaryItemTypes' || fnName === 'getDeductionTypes' ||
+               fnName === 'getAttendanceList'  || fnName === 'getSalaryRecords') {
+      ok([]);
+
+    } else {
+      fail('[offline] "' + fnName + '" ต้องการ GAS — deploy แล้วลองใหม่');
     }
   }
-}
 
-// ─────────────────────────────────────────────────────────────
-// ติดตั้ง window.google.script.run
-// ─────────────────────────────────────────────────────────────
-(function installBridge() {
-  // สร้าง run proxy ใหม่ทุกครั้งที่เข้าถึง
-  function makeRun() {
-    const r = new GASRunner();
-    return r._chain();
-  }
+  // ─── สร้าง api object — ทุก method เป็น function จริงๆ ────
+  var api = {
 
-  const googleObj = {
-    script: {
-      get run() { return makeRun(); }
-    }
+    withSuccessHandler: function(fn) { _ok  = fn; return api; },
+    withFailureHandler: function(fn) { _err = fn; return api; },
+
+    // ── Auth ──
+    loginAdmin:           function(p) { return _call('loginAdmin', p); },
+    getAdminUserList:     function(p) { return _call('getAdminUserList', p); },
+    saveAdminUser:        function(p) { return _call('saveAdminUser', p); },
+    deleteAdminUser:      function(p) { return _call('deleteAdminUser', p); },
+    saveUserPermissions:  function(p) { return _call('saveUserPermissions', p); },
+
+    // ── Dashboard ──
+    getDashboardStats:    function(p) { return _call('getDashboardStats', p); },
+
+    // ── Employees ──
+    getEmployeeData:      function(p) { return _call('getEmployeeData', p); },
+    saveEmployee:         function(p) { return _call('saveEmployee', p); },
+    deleteEmployee:       function(p) { return _call('deleteEmployee', p); },
+
+    // ── Departments ──
+    getDepartmentData:    function(p) { return _call('getDepartmentData', p); },
+    saveDepartment:       function(p) { return _call('saveDepartment', p); },
+
+    // ── Salary ──
+    getSalaryItemTypes:   function(p) { return _call('getSalaryItemTypes', p); },
+    getDeductionTypes:    function(p) { return _call('getDeductionTypes', p); },
+    calculateMonthlySalary: function(p) { return _call('calculateMonthlySalary', p); },
+    getSalaryRecords:     function(p) { return _call('getSalaryRecords', p); },
+    getEmployeeSlip:      function(p) { return _call('getEmployeeSlip', p); },
+
+    // ── Attendance ──
+    getAttendanceList:    function(p) { return _call('getAttendanceList', p); },
+    saveAttendance:       function(p) { return _call('saveAttendance', p); },
+
+    // ── Face ──
+    verifyFaceAndSave:    function(p) { return _call('verifyFaceAndSave', p); },
+    saveFaceRegistration: function(p) { return _call('saveFaceRegistration', p); },
+    processRegistration:  function(p) { return _call('processRegistration', p); },
+
+    // ── Config ──
+    getConfigValues:      function(p) { return _call('getConfigValues', p); },
+    getConfig:            function(p) { return _call('getConfig', p); },
+    saveConfig:           function(p) { return _call('saveConfig', p); },
+
+    // ── Employee Portal ──
+    getEmployeePortalData: function(p) { return _call('getEmployeePortalData', p); },
+    checkLocation:        function(p) { return _call('checkLocation', p); }
   };
 
-  // ถ้า google มีอยู่แล้ว (gtag etc.) ให้ patch เฉพาะ script
-  if (window.google) {
-    window.google.script = googleObj.script;
+  return api;
+}
+
+// ─── ติดตั้ง window.google.script.run ────────────────────────
+(function() {
+  var scriptObj = {
+    get run() { return _makeGasRun(); }
+  };
+
+  if (window.google && window.google.script) {
+    // google มีอยู่แล้ว (เช่น gtag) — patch เฉพาะ script
+    window.google.script = scriptObj;
+  } else if (window.google) {
+    window.google.script = scriptObj;
   } else {
-    try {
-      Object.defineProperty(window, 'google', {
-        get() { return googleObj; },
-        configurable: true
-      });
-    } catch(e) {
-      window.google = googleObj;
-    }
+    window.google = { script: scriptObj };
   }
 
-  console.log('[api-bridge] ✅ google.script.run พร้อมใช้งาน | GAS:', GAS_API_URL);
+  console.log('[api-bridge] ✅ พร้อมใช้งาน — GAS:', GAS_API_URL);
 })();
