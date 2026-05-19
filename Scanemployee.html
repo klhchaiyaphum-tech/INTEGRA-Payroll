@@ -560,7 +560,8 @@
   // ── Back to portal ───────────────────────────────────────────
   window.goBackToPortal = function() {
     _stopCamera();
-    if (typeof showPage === 'function') showPage('page-employee-portal', null);
+    if (typeof staffNav === 'function') staffNav('page-employee-portal', 'nav-btn-home');
+    else if (typeof showPage === 'function') showPage('page-employee-portal', null);
   };
 
   // ── initScan (called by _PAGE_INIT) ─────────────────────────

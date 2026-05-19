@@ -1,11 +1,12 @@
 <style>
 #portal-wrap {
   min-height: 100vh;
+  min-height: 100dvh;
   background: linear-gradient(160deg, #1a2226 0%, #3c8dbc 60%, #ecf0f5 100%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 0 40px;
+  padding: 0 0 calc(80px + env(safe-area-inset-bottom,0px));
   font-family: 'Sarabun', sans-serif;
 }
 .portal-header {
@@ -175,9 +176,6 @@
     </button>
   </div>
 
-  <div class="logout-link" onclick="doLogout()">
-    <i class="bi bi-box-arrow-left me-1"></i>ออกจากระบบ
-  </div>
 </div>
 
 <script>
@@ -223,8 +221,8 @@ function loadEmployeePortal() {
   }
 }
 
-function goToScan()     { if (typeof showPage === 'function') showPage('page-scan',     null); }
-function goToRegister() { if (typeof showPage === 'function') showPage('page-register', null); }
-function viewSlip()     { alert('📄 ฟีเจอร์สลิปเงินเดือนกำลังพัฒนา'); }
-function leaveRequest() { alert('📋 ฟีเจอร์แจ้งลา/OT กำลังพัฒนา'); }
+function goToScan()     { if (typeof staffNav==='function') staffNav('page-scan','nav-btn-scan'); else showPage('page-scan',null); }
+function goToRegister() { if (typeof staffNav==='function') staffNav('page-register','nav-btn-register'); else showPage('page-register',null); }
+function viewSlip()     { alert('ฟีเจอร์สลิปเงินเดือนกำลังพัฒนา'); }
+function leaveRequest() { alert('ฟีเจอร์แจ้งลา/OT กำลังพัฒนา'); }
 </script>

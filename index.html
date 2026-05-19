@@ -50,9 +50,48 @@
     .table-card               { border-top:3px solid var(--primary-color) !important; }
     .border-primary           { border-color:var(--primary-color) !important; }
 
-    /* ── Staff mode: fullscreen, no sidebar ── */
-    body.staff-mode #main-content { padding:0; }
-    body.staff-mode .sidebar      { display:none !important; }
+    /* ── Staff mode: fullscreen, no sidebar, with bottom nav ── */
+    body.staff-mode #main-content  { padding: 0; padding-bottom: calc(62px + env(safe-area-inset-bottom,0px)); }
+    body.staff-mode .sidebar       { display: none !important; }
+    /* hide bottom nav on scan page (scan has its own check-in/out buttons) */
+    body.staff-mode.on-scan-page #staff-bottom-nav  { display: none !important; }
+    body.staff-mode.on-scan-page #main-content      { padding-bottom: 0; }
+
+    /* ── Staff bottom nav ── */
+    #staff-bottom-nav {
+      display: none;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      height: calc(62px + env(safe-area-inset-bottom,0px));
+      padding-bottom: env(safe-area-inset-bottom,0px);
+      background: #1a2226;
+      border-top: 1px solid rgba(255,255,255,0.12);
+      z-index: 200;
+      align-items: stretch;
+    }
+    body.staff-mode #staff-bottom-nav { display: flex; }
+    .staff-nav-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.45);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 6px 4px 8px;
+      font-size: 0.65rem;
+      cursor: pointer;
+      transition: color 0.15s;
+      font-family: 'Sarabun', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .staff-nav-btn i    { font-size: 1.45rem; line-height: 1; }
+    .staff-nav-btn span { line-height: 1.2; }
+    .staff-nav-btn.active { color: #3c8dbc; }
+    .staff-nav-btn.logout { color: rgba(255,120,120,0.7); }
+    .staff-nav-btn:active  { opacity: 0.6; }
   </style>
 </head>
 <body class="theme-1">
@@ -143,16 +182,24 @@
     <a class="sidebar-link text-warning" onclick="doLogout()"><i class="bi bi-box-arrow-left me-2"></i> ออกจากระบบ</a>
   </div>
 
-  <!-- STAFF SIDEBAR (minimal) -->
-  <div id="sidebar-staff" class="sidebar shadow d-none">
-    <div class="sidebar-header">
-      <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>EMPLOYEE</h5>
-      <small class="text-secondary" id="staff-name-display">—</small>
-    </div>
-    <div class="nav-label">เมนูพนักงาน</div>
-    <a class="sidebar-link active" onclick="showPage('page-employee-portal',this)"><i class="bi bi-house-heart me-2"></i> หน้าแรกของฉัน</a>
-    <a class="sidebar-link" onclick="showPage('page-scan',this)"><i class="bi bi-qr-code-scan me-2"></i> สแกนลงเวลา</a>
-    <a class="sidebar-link text-warning" onclick="doLogout()"><i class="bi bi-box-arrow-left me-2"></i> ออกจากระบบ</a>
+  <!-- Staff bottom nav (replaces sidebar on mobile) -->
+  <div id="staff-bottom-nav">
+    <button class="staff-nav-btn active" id="nav-btn-home" onclick="staffNav('page-employee-portal','nav-btn-home')">
+      <i class="bi bi-house-heart-fill"></i>
+      <span>หน้าหลัก</span>
+    </button>
+    <button class="staff-nav-btn" id="nav-btn-scan" onclick="staffNav('page-scan','nav-btn-scan')">
+      <i class="bi bi-camera-fill"></i>
+      <span>ลงเวลา</span>
+    </button>
+    <button class="staff-nav-btn" id="nav-btn-register" onclick="staffNav('page-register','nav-btn-register')">
+      <i class="bi bi-person-badge-fill"></i>
+      <span>ลงทะเบียน</span>
+    </button>
+    <button class="staff-nav-btn logout" onclick="doLogout()">
+      <i class="bi bi-box-arrow-left"></i>
+      <span>ออกจากระบบ</span>
+    </button>
   </div>
 
   <!-- MAIN CONTENT AREA -->
@@ -411,12 +458,9 @@ function loginSuccess(res) {
       });
     }, 1500);
   } else {
-    document.getElementById('sidebar-staff').classList.remove('d-none');
+    document.body.classList.add('staff-mode');
     document.getElementById('sidebar-admin').classList.add('d-none');
-    const nameEl = document.getElementById('staff-name-display');
-    if (nameEl) nameEl.textContent = _currentUser.name;
-    showPage('page-employee-portal', document.querySelector('#sidebar-staff .sidebar-link'));
-    // Preload หน้าสแกน
+    staffNav('page-employee-portal', 'nav-btn-home');
     setTimeout(function() { _loadFragment('page-scan', null); }, 800);
   }
 }
@@ -427,15 +471,16 @@ function goToEmployeePortal() {
   document.body.classList.add('staff-mode');
   document.getElementById('login-mask').classList.add('d-none');
   document.getElementById('main-app').classList.remove('d-none');
-  document.getElementById('sidebar-staff').classList.add('d-none');
   document.getElementById('sidebar-admin').classList.add('d-none');
-  showPage('page-scan', null);
+  staffNav('page-scan', 'nav-btn-scan');
+  setTimeout(function() { _loadFragment('page-employee-portal', null); }, 600);
 }
 
 function doLogout() {
   _currentUser = null;
   _loadedPages.clear();
   document.body.classList.remove('staff-mode');
+  document.body.classList.remove('on-scan-page');
   // Reset all page fragments
   document.querySelectorAll('.page-section').forEach(p => { p.classList.remove('active'); p.innerHTML = ''; });
   document.getElementById('sidebar-admin').classList.add('d-none');
@@ -447,8 +492,26 @@ function doLogout() {
   document.getElementById('login-error').classList.add('d-none');
 }
 
+// ── Staff bottom nav helper ───────────────────────────────
+function staffNav(pageId, navBtnId) {
+  // update active state
+  document.querySelectorAll('.staff-nav-btn').forEach(function(b) { b.classList.remove('active'); });
+  if (navBtnId) {
+    var btn = document.getElementById(navBtnId);
+    if (btn) btn.classList.add('active');
+  }
+  // manage on-scan-page class (hides bottom nav; scan page has its own buttons)
+  if (pageId === 'page-scan') {
+    document.body.classList.add('on-scan-page');
+  } else {
+    document.body.classList.remove('on-scan-page');
+  }
+  showPage(pageId, null);
+}
+
 // Expose for fragments
 window.showPage     = showPage;
+window.staffNav     = staffNav;
 window.doLogout     = doLogout;
 window.loginSuccess = loginSuccess;
 </script>
