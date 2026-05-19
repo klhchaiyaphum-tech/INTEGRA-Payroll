@@ -28,36 +28,56 @@
 
 <!-- ============ LOGIN MASK ============ -->
 <div id="login-mask">
-  <div class="card shadow-lg border-0" style="width:100%;max-width:420px;border-radius:15px;">
-    <div class="card-body p-5">
-      <div class="text-center mb-4">
-        <div style="width:70px;height:70px;background:linear-gradient(135deg,#3c8dbc,#1a2226);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">
-          <i class="bi bi-shield-lock-fill text-white fs-2"></i>
-        </div>
-        <h4 class="mt-3 fw-bold text-dark">INTEGRA Payroll</h4>
-        <p class="text-muted small">ระบบบริหารเงินเดือน</p>
+  <div class="card shadow-lg border-0" style="width:100%;max-width:440px;border-radius:20px;overflow:hidden;">
+
+    <!-- ส่วนหัว -->
+    <div style="background:linear-gradient(135deg,#1a2226,#3c8dbc);padding:32px 24px 24px;text-align:center;">
+      <div style="width:72px;height:72px;background:rgba(255,255,255,0.15);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:2px solid rgba(255,255,255,0.3);">
+        <i class="bi bi-shield-lock-fill text-white" style="font-size:2rem;"></i>
       </div>
-      <div id="login-error" class="alert alert-danger d-none small py-2"></div>
-      <div class="mb-3">
-        <label class="form-label fw-semibold small">ชื่อผู้ใช้</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-person"></i></span>
-          <input type="text" id="login-username" class="form-control" placeholder="username" autocomplete="username">
-        </div>
-      </div>
-      <div class="mb-4">
-        <label class="form-label fw-semibold small">รหัสผ่าน</label>
-        <div class="input-group">
-          <span class="input-group-text"><i class="bi bi-lock"></i></span>
-          <input type="password" id="login-password" class="form-control" placeholder="password" autocomplete="current-password">
-        </div>
-      </div>
-      <button class="btn btn-primary w-100 fw-bold" onclick="doLogin()">
-        <i class="bi bi-box-arrow-in-right me-1"></i> เข้าสู่ระบบ
-      </button>
-      <hr class="my-3">
-      <p class="text-center text-muted small mb-0">พนักงาน: สแกน QR Code หรือขอ link จากฝ่ายบุคคล</p>
+      <h4 class="mt-3 mb-1 fw-bold text-white">INTEGRA Payroll</h4>
+      <p class="text-white-50 small mb-0">ระบบบริหารเงินเดือนและบุคคล</p>
     </div>
+
+    <div class="card-body p-4">
+
+      <!-- ปุ่มพนักงาน (ใหญ่ โดดเด่น) -->
+      <button class="btn w-100 fw-bold mb-3 py-3" onclick="goToEmployeePortal()"
+        style="background:linear-gradient(135deg,#00c851,#007e33);color:white;border:none;border-radius:14px;font-size:1.05rem;">
+        <i class="bi bi-person-bounding-box me-2" style="font-size:1.3rem;"></i>
+        พนักงาน — สแกนลงเวลา
+        <div style="font-size:0.75rem;font-weight:400;opacity:0.85;margin-top:2px;">เข้าใช้งานได้เลย ไม่ต้องรหัสผ่าน</div>
+      </button>
+
+      <!-- เส้นคั่น -->
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <hr class="flex-grow-1 m-0">
+        <span class="text-muted small px-1">หรือ เข้าระบบจัดการ</span>
+        <hr class="flex-grow-1 m-0">
+      </div>
+
+      <!-- Admin Login -->
+      <div id="login-error" class="alert alert-danger d-none small py-2 mb-3"></div>
+      <div class="mb-3">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+          <input type="text" id="login-username" class="form-control border-start-0 ps-0"
+            placeholder="Username (admin / hr / manager)" autocomplete="username">
+        </div>
+      </div>
+      <div class="mb-3">
+        <div class="input-group">
+          <span class="input-group-text bg-light border-end-0"><i class="bi bi-lock text-muted"></i></span>
+          <input type="password" id="login-password" class="form-control border-start-0 ps-0"
+            placeholder="Password" autocomplete="current-password">
+        </div>
+      </div>
+      <button class="btn btn-primary w-100 fw-bold py-2" onclick="doLogin()">
+        <i class="bi bi-box-arrow-in-right me-1"></i> เข้าสู่ระบบหลังบ้าน
+      </button>
+
+    </div>
+  </div>
   </div>
 </div>
 
