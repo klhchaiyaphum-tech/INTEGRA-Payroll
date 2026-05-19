@@ -1,4 +1,4 @@
-<style>
+﻿<style>
 /* ── Scan page — consistent with employee portal gradient ── */
 #scan-wrap {
   min-height: 100vh;
@@ -264,7 +264,7 @@
       <div class="camera-frame" id="camera-frame">
         <div class="cam-placeholder" id="cam-placeholder">
           <i class="bi bi-camera"></i>
-          <small>กดเช็คอิน/เช็คเอาท์<br>เพื่อเปิดกล้อง</small>
+          <small>กดเข้างาน/ออกงาน<br>เพื่อเปิดกล้อง</small>
         </div>
         <video id="scan-video" autoplay playsinline style="display:none"></video>
         <canvas id="scan-canvas" style="display:none"></canvas>
@@ -284,11 +284,11 @@
     <div class="scan-btns" id="scan-btns">
       <button class="btn-checkin"  id="btn-in"  onclick="startScan('IN')">
         <span class="icon"><i class="bi bi-box-arrow-in-right"></i></span>
-        เช็คอิน
+        เข้างาน
       </button>
       <button class="btn-checkout" id="btn-out" onclick="startScan('OUT')">
         <span class="icon"><i class="bi bi-box-arrow-right"></i></span>
-        เช็คเอาท์
+        ออกงาน
       </button>
     </div>
 
@@ -341,7 +341,7 @@
       },
       function(err) {
         var m = err.code===1 ? 'ปฏิเสธสิทธิ์ GPS' : err.code===2 ? 'ไม่พบสัญญาณ' : 'GPS timeout';
-        _setGps('yellow', m+' (ยังเช็คอินได้)');
+        _setGps('yellow', m+' (ยังเข้างานได้)');
       },
       { timeout:15000, maximumAge:30000 }
     );
@@ -455,7 +455,7 @@
       },
       function(errMsg) {
         // Camera failed — bypass on HTTPS error (user denied)
-        _msg('⚠️ '+errMsg+' — เช็คอินโดยไม่ใช้กล้อง','err');
+        _msg('⚠️ '+errMsg+' — เข้างานโดยไม่ใช้กล้อง','err');
         _faceVerified = true;
         setTimeout(function(){ _doSave(type); }, 800);
       }
@@ -502,7 +502,7 @@
 
     if (card)  { card.className = 'result-card show'+(type==='OUT'?' out':''); }
     if (rTime) rTime.textContent = timeStr;
-    if (rLbl)  rLbl.textContent  = (type==='IN'?'✅ เช็คอินสำเร็จ':'🔚 เช็คเอาท์สำเร็จ')+' — '+name;
+    if (rLbl)  rLbl.textContent  = (type==='IN'?'✅ เข้างานสำเร็จ':'🔚 ออกงานสำเร็จ')+' — '+name;
     if (btns)  btns.style.display = 'none';
 
     _msg('บันทึกเรียบร้อย','ok');
@@ -575,3 +575,4 @@
   window.initScan();
 })();
 </script>
+
