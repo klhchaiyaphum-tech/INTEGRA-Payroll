@@ -152,38 +152,39 @@ class GASRunner {
   }
 }
 
-// Override window.google.script.run
-(function () {
-  const _gasRunFactory = () => new GASRunner();
-  const _runProxy = new Proxy({}, {
-    get(_, fnName) {
-      const runner = new GASRunner();
-      return runner._proxy()[fnName];
+// ── ทำให้ runner รองรับ chain: .withSuccessHandler().withFailureHandler().fnName()
+function _makeChainable(runner) {
+  return new Proxy({}, {
+    get(_, prop) {
+      if (prop === 'withSuccessHandler') {
+        return (fn) => { runner._successCb = fn; return _makeChainable(runner); };
+      }
+      if (prop === 'withFailureHandler') {
+        return (fn) => { runner._failureCb = fn; return _makeChainable(runner); };
+      }
+      // ถึงตรงนี้ = ชื่อฟังก์ชัน GAS จริง
+      return (...args) => runner._call(prop, args);
     }
   });
+}
 
+// Override window.google.script.run
+(function () {
   const gasObj = {
     script: {
       get run() {
+        // ทุกครั้งที่เข้าถึง .run จะได้ proxy ใหม่
         return new Proxy({}, {
           get(_, prop) {
+            const runner = new GASRunner();
             if (prop === 'withSuccessHandler') {
-              return (fn) => {
-                const r = new GASRunner();
-                r._successCb = fn;
-                return r._proxy();
-              };
+              return (fn) => { runner._successCb = fn; return _makeChainable(runner); };
             }
             if (prop === 'withFailureHandler') {
-              return (fn) => {
-                const r = new GASRunner();
-                r._failureCb = fn;
-                return r._proxy();
-              };
+              return (fn) => { runner._failureCb = fn; return _makeChainable(runner); };
             }
-            // Direct call without handler
-            const r = new GASRunner();
-            return (...args) => r._call(prop, args);
+            // เรียกตรงๆ ไม่มี handler
+            return (...args) => runner._call(prop, args);
           }
         });
       }
@@ -196,5 +197,5 @@ class GASRunner {
     configurable: true
   });
 
-  console.log('[api-bridge] ✅ google.script.run → GAS fetch bridge loaded. URL:', GAS_API_URL);
+  console.log('[api-bridge] ✅ loaded. GAS URL:', GAS_API_URL);
 })();
