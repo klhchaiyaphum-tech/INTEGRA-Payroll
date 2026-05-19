@@ -8,23 +8,53 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
   <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { margin:0; padding:0; background:#ecf0f5; overflow:hidden; font-family:'Sarabun',sans-serif; }
+    /* ── Theme variables (from Theme.html) ── */
+    body {
+      --primary-color: #3c8dbc;
+      --primary-hover: #367fa9;
+      --sidebar-bg:    #222d32;
+      --sidebar-active:#1e282c;
+    }
+    body.theme-2 { --primary-color:#28a745; --primary-hover:#218838; --sidebar-bg:#1e2d24; --sidebar-active:#24342a; }
+    body.theme-3 { --primary-color:#00c0ef; --primary-hover:#00add8; --sidebar-bg:#1a2226; --sidebar-active:#222d32; }
+
+    /* ── Layout ── */
+    body   { margin:0; padding:0; background:#ecf0f5; overflow:hidden; font-family:'Sarabun',sans-serif; }
     .wrapper { display:flex; width:100vw; height:100vh; }
-    .sidebar { width:250px; min-width:250px; background:#222d32; color:white; height:100vh; flex-shrink:0; overflow-y:auto; }
-    .sidebar-header { padding:20px; background:#1a2226; text-align:center; }
-    .nav-label { padding:12px 20px 5px; font-size:11px; color:#4b646f; background:#1a2226; text-transform:uppercase; font-weight:bold; }
+    .sidebar { width:250px; min-width:250px; background:var(--sidebar-bg); color:white; height:100vh; flex-shrink:0; overflow-y:auto; }
+    .sidebar-header { padding:20px; background:rgba(0,0,0,.15); text-align:center; }
+    .nav-label { padding:12px 20px 5px; font-size:11px; color:#4b646f; text-transform:uppercase; font-weight:bold; }
     .sidebar-link { display:block; padding:12px 20px; color:#b8c7ce; text-decoration:none; font-size:14px; border-left:3px solid transparent; cursor:pointer; }
-    .sidebar-link:hover, .sidebar-link.active { background:#1e282c; color:white; border-left:3px solid #3c8dbc; }
+    .sidebar-link:hover, .sidebar-link.active { background:var(--sidebar-active); color:white; border-left:3px solid var(--primary-color); }
     #main-content { flex-grow:1; overflow-y:auto; padding:25px; background:#ecf0f5; }
     #login-mask { position:fixed; top:0; left:0; width:100%; height:100vh; background:#222d32; z-index:9999; display:flex; align-items:center; justify-content:center; }
-    .page-section { display:none; }
-    .page-section.active { display:block; }
+
+    /* ── Page sections ── */
+    .page-section         { display:none; }
+    .page-section.active  { display:block; }
+    .d-none               { display:none !important; }
+
+    /* ── Loading spinner ── */
     #loading-spinner { text-align:center; padding:60px; color:#888; }
-    /* Staff mode — no sidebar, full width */
+    #page-loading-overlay {
+      position:fixed; inset:0; background:rgba(255,255,255,.7);
+      display:flex; align-items:center; justify-content:center;
+      z-index:8000; display:none;
+    }
+    #page-loading-overlay.show { display:flex; }
+
+    /* ── Bootstrap theme override ── */
+    .btn-primary, .bg-primary { background-color:var(--primary-color) !important; border-color:var(--primary-color) !important; }
+    .btn-primary:hover        { background-color:var(--primary-hover) !important; }
+    .text-primary             { color:var(--primary-color) !important; }
+    .table-card               { border-top:3px solid var(--primary-color) !important; }
+    .border-primary           { border-color:var(--primary-color) !important; }
+
+    /* ── Staff mode ── */
     body.staff-mode #main-content { padding:0; }
   </style>
 </head>
-<body>
+<body class="theme-1">
 
 <!-- ============ LOGIN MASK ============ -->
 <div id="login-mask">
@@ -131,6 +161,14 @@
       <p class="mt-2 text-muted">กำลังโหลด...</p>
     </div>
 
+  <!-- Overlay spinner สำหรับ fragment load -->
+  <div id="page-loading-overlay">
+    <div class="text-center">
+      <div class="spinner-border text-primary mb-2" style="width:2.5rem;height:2.5rem"></div>
+      <div class="text-muted small" id="overlay-text">กำลังโหลดหน้า...</div>
+    </div>
+  </div>
+
     <!-- Pages (fragments loaded on demand) -->
     <div id="page-dashboard" class="page-section"></div>
     <div id="page-employees" class="page-section"></div>
@@ -197,6 +235,17 @@ const _loadedPages = new Set();
 // ──────────────────────────────────────────────
 // FRAGMENT LOADER
 // ──────────────────────────────────────────────
+function _showOverlay(text) {
+  const o = document.getElementById('page-loading-overlay');
+  const t = document.getElementById('overlay-text');
+  if (o) o.classList.add('show');
+  if (t) t.textContent = text || 'กำลังโหลด...';
+}
+function _hideOverlay() {
+  const o = document.getElementById('page-loading-overlay');
+  if (o) o.classList.remove('show');
+}
+
 function _loadFragment(pageId, callback) {
   if (_loadedPages.has(pageId)) {
     if (callback) callback();
@@ -205,23 +254,24 @@ function _loadFragment(pageId, callback) {
   const file = _PAGE_FILES[pageId];
   if (!file) { if(callback) callback(); return; }
 
-  const spinner = document.getElementById('loading-spinner');
-  if (spinner) spinner.classList.remove('d-none');
+  _showOverlay('กำลังโหลดหน้า...');
 
-  fetch(file)
-    .then(r => { if(!r.ok) throw new Error(r.status); return r.text(); })
+  fetch(file + '?v=' + Date.now())   // cache-bust
+    .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status + ': ' + file); return r.text(); })
     .then(html => {
       const el = document.getElementById(pageId);
       if (el) {
-        // Fragment เก่าอาจมี <div id="page-xxx" class="page-section d-none"> ครอบอยู่
-        // ดึงเฉพาะ content ข้างใน เพื่อไม่ให้ซ้อน div และไม่โดน d-none ซ่อน
+        // ดึงเฉพาะ content ข้างในออกจาก wrapper div เดิม
+        // (fragment เก่ามี <div class="page-section d-none"> หรือ <div class="d-none"> ครอบ)
         const tmp = document.createElement('div');
         tmp.innerHTML = html;
-        const inner = tmp.querySelector('.page-section') || tmp.querySelector('[id^="page-"]');
-        el.innerHTML = inner ? inner.innerHTML : html;
+        const wrapper = tmp.querySelector('.page-section') ||
+                        tmp.querySelector('.d-none[id]')   ||
+                        tmp.querySelector('[id^="page-"]');
+        el.innerHTML = wrapper ? wrapper.innerHTML : html;
 
-        // Execute <script> tags ในส่วนที่โหลดมา
-        el.querySelectorAll('script').forEach(old => {
+        // Re-execute <script> tags (innerHTML ไม่ run scripts อัตโนมัติ)
+        el.querySelectorAll('script').forEach(function(old) {
           const s = document.createElement('script');
           if (old.src) { s.src = old.src; s.async = false; }
           else s.textContent = old.textContent;
@@ -229,14 +279,14 @@ function _loadFragment(pageId, callback) {
         });
       }
       _loadedPages.add(pageId);
-      if (spinner) spinner.classList.add('d-none');
+      _hideOverlay();
       if (callback) callback();
     })
-    .catch(err => {
-      if (spinner) spinner.classList.add('d-none');
+    .catch(function(err) {
+      _hideOverlay();
       const el = document.getElementById(pageId);
-      if (el) el.innerHTML = `<div class="alert alert-warning m-3">⚠️ ไม่พบไฟล์ <strong>${file}</strong><br><small>${err}</small></div>`;
-      _loadedPages.add(pageId); // prevent retry loops
+      if (el) el.innerHTML = '<div class="alert alert-warning m-4"><i class="bi bi-exclamation-triangle me-2"></i>ไม่พบไฟล์ <strong>' + file + '</strong><br><small class="text-muted">' + err + '</small></div>';
+      _loadedPages.add(pageId);
       if (callback) callback();
     });
 }
