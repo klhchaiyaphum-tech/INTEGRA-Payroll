@@ -71,6 +71,31 @@ function _makeGasRun() {
     } else if (fnName === 'checkLocation') {
       fail('GPS ไม่พร้อมในโหมดออฟไลน์');
 
+    } else if (fnName === 'identifyEmployee') {
+      // Offline: cannot identify without GAS — return not found
+      ok({ found: false, message: 'offline' });
+
+    } else if (fnName === 'getEmployeeSlips') {
+      // Demo salary slips
+      var slips = [];
+      var now2 = new Date();
+      for (var m = 0; m < 6; m++) {
+        var d2 = new Date(now2.getFullYear(), now2.getMonth() - m, 1);
+        slips.push({
+          month: (d2.getMonth()+1) + '/' + d2.getFullYear(),
+          label: d2.toLocaleDateString('th-TH',{month:'long',year:'numeric'}),
+          amount: payload.baseSalary || 25000,
+          pdfUrl: ''
+        });
+      }
+      ok(slips);
+
+    } else if (fnName === 'submitLeaveRequest') {
+      ok({ success: true, refNo: 'LV' + Date.now().toString().slice(-6) });
+
+    } else if (fnName === 'requestWorkCertificate') {
+      ok({ success: true, message: 'ส่งคำขอแล้ว HR จะแจ้งกลับภายใน 3 วันทำการ' });
+
     } else if (fnName === 'verifyFaceAndSave') {
       ok({ matched: true, empId: payload.empId || 'WALK001', name: payload.name || 'พนักงาน' });
 
@@ -184,8 +209,13 @@ function _makeGasRun() {
     saveConfig:           function(p) { return _call('saveConfig', p); },
 
     // ── Employee Portal ──
-    getEmployeePortalData: function(p) { return _call('getEmployeePortalData', p); },
-    checkLocation:        function(p) { return _call('checkLocation', p); }
+    getEmployeePortalData:    function(p) { return _call('getEmployeePortalData', p); },
+    identifyEmployee:         function(p) { return _call('identifyEmployee', p); },
+    getEmployeeSlips:         function(p) { return _call('getEmployeeSlips', p); },
+    submitLeaveRequest:       function(p) { return _call('submitLeaveRequest', p); },
+    requestWorkCertificate:   function(p) { return _call('requestWorkCertificate', p); },
+    checkLocation:            function(p) { return _call('checkLocation', p); },
+    resignEmployee:           function(p) { return _call('resignEmployee', p); }
   };
 
   return api;
