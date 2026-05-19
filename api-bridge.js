@@ -78,6 +78,12 @@ function _makeGasRun() {
       var now = new Date();
       ok({ success: true, time: now.toTimeString().slice(0,5), message: 'บันทึก (offline)' });
 
+    } else if (fnName === 'saveEmployee') {
+      ok({ success: true, message: 'บันทึกพนักงาน (offline mode — ต้องการ GAS เพื่อบันทึกจริง)' });
+
+    } else if (fnName === 'deleteEmployee' || fnName === 'resignEmployee') {
+      ok({ success: true });
+
     } else if (fnName === 'saveFaceRegistration' || fnName === 'processRegistration') {
       ok({ success: true, message: 'บันทึกใบหน้า (offline)' });
 
@@ -90,8 +96,26 @@ function _makeGasRun() {
     } else if (fnName === 'getConfigValues' || fnName === 'getConfig') {
       ok({ note: 'offline mode' });
 
-    } else if (fnName === 'getEmployeeData' || fnName === 'getDepartmentData' ||
-               fnName === 'getSalaryItemTypes' || fnName === 'getDeductionTypes' ||
+    } else if (fnName === 'getEmployeeData') {
+      // Demo data (offline) — แทนที่ด้วยข้อมูลจริงเมื่อ GAS พร้อม
+      ok([
+        { id:'EMP001', code:'EMP001', name:'สมชาย ใจดี',      dept:'ฝ่ายบุคคล',  position:'ผู้จัดการ HR',   dob:'01/01/2530', startDate:'01/06/2563', baseSalary:35000, phone:'081-000-0001', statusToday:'มาทำงาน' },
+        { id:'EMP002', code:'EMP002', name:'สมหญิง สวยงาม',   dept:'ฝ่ายบัญชี', position:'นักบัญชี',        dob:'15/03/2535', startDate:'15/08/2564', baseSalary:28000, phone:'082-000-0002', statusToday:'มาทำงาน' },
+        { id:'EMP003', code:'EMP003', name:'วิชัย รักงาน',    dept:'ฝ่ายขาย',   position:'พนักงานขาย',      dob:'20/07/2532', startDate:'01/01/2565', baseSalary:22000, phone:'083-000-0003', statusToday:'สาย'      },
+        { id:'EMP004', code:'EMP004', name:'มาลี ดีมาก',      dept:'ฝ่ายผลิต',  position:'พนักงานผลิต',    dob:'10/10/2538', startDate:'01/03/2565', baseSalary:18000, phone:'084-000-0004', statusToday:'ขาด'      },
+        { id:'EMP005', code:'EMP005', name:'ประสิทธิ์ เก่งมาก',dept:'ฝ่าย IT',  position:'นักพัฒนาระบบ',   dob:'05/05/2537', startDate:'01/06/2566', baseSalary:42000, phone:'085-000-0005', statusToday:'มาทำงาน' }
+      ]);
+
+    } else if (fnName === 'getDepartmentData') {
+      ok([
+        { id:'DEPT01', name:'ฝ่ายบุคคล',  description:'Human Resources',  count:2 },
+        { id:'DEPT02', name:'ฝ่ายบัญชี', description:'Accounting & Finance', count:1 },
+        { id:'DEPT03', name:'ฝ่ายขาย',   description:'Sales Department',  count:1 },
+        { id:'DEPT04', name:'ฝ่ายผลิต',  description:'Production',        count:1 },
+        { id:'DEPT05', name:'ฝ่าย IT',   description:'Information Technology', count:1 }
+      ]);
+
+    } else if (fnName === 'getSalaryItemTypes' || fnName === 'getDeductionTypes' ||
                fnName === 'getAttendanceList'  || fnName === 'getSalaryRecords') {
       ok([]);
 

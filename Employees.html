@@ -15,7 +15,8 @@
         <span class="fw-bold text-secondary">พนักงานทั้งหมด: <span id="totalEmpCount" class="text-primary fs-5">0</span> คน</span>
         <div class="input-group" style="width: 350px;">
           <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
-          <input type="text" id="empSearchInput" class="form-control border-start-0 bg-light" placeholder="ค้นหาชื่อ, รหัส หรือแผนก..." onkeyup="filterEmployees()">
+          <input type="text" id="empSearchInput" class="form-control border-start-0 bg-light"
+                 placeholder="ค้นหาชื่อ, รหัส หรือแผนก..." onkeyup="filterEmployees()">
         </div>
       </div>
 
@@ -23,17 +24,20 @@
         <table class="table table-hover align-middle mb-0 border">
           <thead class="table-light text-muted small">
             <tr>
-              <th class="text-center" style="width: 60px;">รูป</th>
-              <th style="width: 110px;">รหัสพนักงาน</th>
+              <th class="text-center" style="width:60px;">รูป</th>
+              <th style="width:110px;">รหัสพนักงาน</th>
               <th>ชื่อ-นามสกุล / แผนก</th>
               <th class="text-center">วันเกิด / อายุ</th>
               <th class="text-center">เริ่มงาน / อายุงาน</th>
               <th class="text-center">สถานะวันนี้</th>
-              <th class="text-center pe-4" style="width: 180px;">จัดการ / ระบบลา</th>
+              <th class="text-center pe-4" style="width:200px;">จัดการ</th>
             </tr>
           </thead>
           <tbody id="empTableBody">
-            <tr><td colspan="7" class="text-center py-5"><span class="spinner-border text-primary"></span></td></tr>
+            <tr><td colspan="7" class="text-center py-5">
+              <div class="spinner-border text-primary mb-2" role="status"></div>
+              <div class="text-muted small">กำลังโหลด...</div>
+            </td></tr>
           </tbody>
         </table>
       </div>
@@ -41,6 +45,83 @@
   </div>
 </div>
 
+<!-- ===== Add / Edit Employee Modal ===== -->
+<div class="modal fade" id="empModal" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-0">
+        <h6 class="modal-title fw-bold" id="empModalTitle">
+          <i class="bi bi-person-plus-fill me-2 text-primary"></i>เพิ่มพนักงานใหม่
+        </h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <input type="hidden" id="emp-id">
+
+        <div class="row g-3">
+          <!-- รหัสพนักงาน -->
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">รหัสพนักงาน <span class="text-danger">*</span></label>
+            <input type="text" id="emp-code" class="form-control" placeholder="เช่น EMP001">
+          </div>
+          <!-- ชื่อ-นามสกุล -->
+          <div class="col-md-8">
+            <label class="form-label small fw-semibold">ชื่อ-นามสกุล <span class="text-danger">*</span></label>
+            <input type="text" id="emp-name" class="form-control" placeholder="ชื่อ นามสกุล">
+          </div>
+          <!-- แผนก -->
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">แผนก</label>
+            <input type="text" id="emp-dept" class="form-control" placeholder="เช่น ฝ่ายบุคคล"
+                   list="emp-dept-list">
+            <datalist id="emp-dept-list"></datalist>
+          </div>
+          <!-- ตำแหน่ง -->
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">ตำแหน่ง</label>
+            <input type="text" id="emp-position" class="form-control" placeholder="เช่น พนักงานทั่วไป">
+          </div>
+          <!-- วันเกิด -->
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">วันเกิด</label>
+            <input type="text" id="emp-dob" class="form-control" placeholder="วว/ดด/ปปปป">
+            <div class="form-text" style="font-size:11px;">รูปแบบ วว/ดด/ปปปป</div>
+          </div>
+          <!-- วันเริ่มงาน -->
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">วันเริ่มงาน</label>
+            <input type="text" id="emp-start" class="form-control" placeholder="วว/ดด/ปปปป">
+          </div>
+          <!-- เงินเดือน -->
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">เงินเดือนพื้นฐาน (บาท)</label>
+            <input type="number" id="emp-salary" class="form-control" placeholder="0" min="0">
+          </div>
+          <!-- เบอร์โทร -->
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">เบอร์โทรศัพท์</label>
+            <input type="text" id="emp-phone" class="form-control" placeholder="0812345678">
+          </div>
+          <!-- อีเมล -->
+          <div class="col-md-6">
+            <label class="form-label small fw-semibold">อีเมล</label>
+            <input type="email" id="emp-email" class="form-control" placeholder="name@email.com">
+          </div>
+        </div>
+
+        <div id="emp-modal-err" class="alert alert-danger d-none small py-2 mt-3 mb-0"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0">
+        <button type="button" class="btn btn-secondary btn-sm px-4" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary btn-sm px-4 fw-bold" id="empSaveBtn" onclick="saveEmpFromModal()">
+          <i class="bi bi-save me-1"></i>บันทึก
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== View Profile Image Modal ===== -->
 <div class="modal fade" id="profileImageModal" tabindex="-1">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-0">
@@ -49,115 +130,274 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
       <div class="modal-body text-center p-4 bg-dark">
-        <img id="viewProfileImg" src="" class="img-fluid rounded shadow" style="max-height: 450px;">
+        <img id="viewProfileImg" src="" class="img-fluid rounded shadow" style="max-height:450px;">
       </div>
     </div>
   </div>
 </div>
 
-<script>
-  let employeeCache = [];
-
-  function loadEmployees() {
-    google.script.run
-      .withSuccessHandler(function(data) {
-        employeeCache = data;
-        renderEmployeeTable(data);
-        document.getElementById('totalEmpCount').innerText = data.length;
-      }).getEmployeeData(); 
-  }
-
-  function renderEmployeeTable(data) {
-    let html = '';
-    data.forEach(emp => {
-      // คำนวณอายุและอายุงาน (Logic รูปที่ 3)
-      const ageDetails = calculateDetailedAge(emp.dob);
-      const workDetails = calculateDetailedAge(emp.startDate);
-      
-      // Attendance Bridge
-      const statusToday = getAttendanceBadge(emp.statusToday);
-
-      html += `
-        <tr>
-          <td class="text-center">
-            <img src="${emp.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'}" 
-                 class="rounded-circle border cursor-pointer" width="38" height="38" 
-                 onclick="viewProfileImage('${emp.profileImg}')">
-          </td>
-          <td class="fw-bold text-primary">${emp.code}</td>
-          <td>
-            <div class="fw-bold">${emp.name}</div>
-            <div class="text-muted small">${emp.dept} | ${emp.position}</div>
-          </td>
-          <td class="text-center">
-            <div class="small fw-bold">${emp.dob || '-'}</div>
-            <div class="text-muted" style="font-size: 11px;">${ageDetails}</div>
-          </td>
-          <td class="text-center">
-            <div class="small fw-bold">${emp.startDate || '-'}</div>
-            <div class="text-info" style="font-size: 11px;">${workDetails}</div>
-          </td>
-          <td class="text-center">${statusToday}</td>
-          <td class="text-center pe-4">
-            <div class="btn-group btn-group-sm mb-1">
-              <button class="btn btn-outline-warning" onclick="editEmp('${emp.id}')"><i class="bi bi-pencil-square"></i></button>
-              <button class="btn btn-outline-info" onclick="openLeaveRequest('${emp.id}')" title="ขอลา"><i class="bi bi-calendar2-check"></i></button>
-              <button class="btn btn-outline-secondary" style="font-size: 10px;" onclick="confirmResign('${emp.id}')" title="แจ้งออก">ลาออก</button>
-            </div>
-            <div class="mt-1">
-              <button class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size: 11px;" onclick="printCert('${emp.id}')">
-                <i class="bi bi-file-earmark-pdf"></i> หนังสือรับรอง
-              </button>
-            </div>
-          </td>
-        </tr>`;
-    });
-    document.getElementById('empTableBody').innerHTML = html || '<tr><td colspan="7" class="text-center">ไม่พบข้อมูล</td></tr>';
-  }
-
-  function calculateDetailedAge(dateStr) {
-    if (!dateStr || dateStr === '-') return '-';
-    try {
-      const parts = dateStr.split('/'); // คาดหวัง วว/ดด/ปปปป
-      const d = new Date(parts[2], parts[1] - 1, parts[0]);
-      const now = new Date();
-      let y = now.getFullYear() - d.getFullYear();
-      let m = now.getMonth() - d.getMonth();
-      if (m < 0) { y--; m += 12; }
-      return `${y} ปี ${m} เดือน`;
-    } catch(e) { return '-'; }
-  }
-
-  function getAttendanceBadge(status) {
-    const badges = {
-      'มาทำงาน': '<span class="badge bg-success-subtle text-success border border-success rounded-pill px-2">มาทำงาน</span>',
-      'สาย': '<span class="badge bg-warning-subtle text-warning border border-warning rounded-pill px-2">สาย</span>',
-      'ขาด': '<span class="badge bg-danger-subtle text-danger border border-danger rounded-pill px-2">ขาด</span>',
-      'ลา': '<span class="badge bg-info-subtle text-info border border-info rounded-pill px-2">ลา</span>'
-    };
-    return badges[status] || '<span class="badge bg-light text-muted border rounded-pill px-2">ยังไม่ลงเวลา</span>';
-  }
-
-  function viewProfileImage(url) {
-    if(!url) { AppAlert.error('ไม่พบรูปภาพ', 'กรุณาอัปโหลดรูปพนักงานก่อนค่ะ'); return; }
-    document.getElementById('viewProfileImg').src = url;
-    new bootstrap.Modal(document.getElementById('profileImageModal')).show();
-  }
-
-  function filterEmployees() {
-    const val = document.getElementById('empSearchInput').value.toLowerCase();
-    const filtered = employeeCache.filter(e => e.name.toLowerCase().includes(val) || e.code.toLowerCase().includes(val));
-    renderEmployeeTable(filtered);
-  }
-
-  // loadEmployees() เรียกจาก _PAGE_INIT ใน index.html โดยตรง — ไม่ต้องใช้ Observer
-</script>
-
 <style>
   .bg-success-subtle { background-color: #d1e7dd; }
   .bg-warning-subtle { background-color: #fff3cd; }
-  .bg-danger-subtle { background-color: #f8d7da; }
-  .bg-info-subtle { background-color: #cff4fc; }
-  .cursor-pointer { cursor: pointer; transition: 0.2s; }
+  .bg-danger-subtle  { background-color: #f8d7da; }
+  .bg-info-subtle    { background-color: #cff4fc; }
+  .cursor-pointer    { cursor: pointer; transition: 0.2s; }
   .cursor-pointer:hover { transform: scale(1.1); }
 </style>
+
+<script>
+var employeeCache = [];
+
+// ─── โหลดข้อมูลพนักงาน ───────────────────────────────────────
+function loadEmployees() {
+  var tbody = document.getElementById('empTableBody');
+  if (tbody) tbody.innerHTML =
+    '<tr><td colspan="7" class="text-center py-5">' +
+    '<div class="spinner-border text-primary mb-2" role="status"></div>' +
+    '<div class="text-muted small">กำลังโหลดข้อมูล...</div></td></tr>';
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+      employeeCache = Array.isArray(data) ? data : [];
+      renderEmployeeTable(employeeCache);
+      var cnt = document.getElementById('totalEmpCount');
+      if (cnt) cnt.innerText = employeeCache.length;
+      // โหลดแผนกเข้า datalist
+      _loadDeptDatalist();
+    })
+    .withFailureHandler(function(err) {
+      if (tbody) tbody.innerHTML =
+        '<tr><td colspan="7" class="text-center py-4 text-muted small">' +
+        '<i class="bi bi-wifi-off me-1"></i>ไม่สามารถโหลดข้อมูลได้: ' +
+        (err && err.message ? err.message : 'ไม่ทราบสาเหตุ') + '</td></tr>';
+    })
+    .getEmployeeData({});
+}
+
+// ─── วาดตาราง ────────────────────────────────────────────────
+function renderEmployeeTable(data) {
+  var html = '';
+  if (!data || data.length === 0) {
+    document.getElementById('empTableBody').innerHTML =
+      '<tr><td colspan="7" class="text-center py-5 text-muted">' +
+      '<i class="bi bi-people fs-1 d-block mb-2 opacity-25"></i>' +
+      'ยังไม่มีข้อมูลพนักงาน — กดปุ่ม <strong>เพิ่มพนักงานใหม่</strong> เพื่อเริ่มต้น</td></tr>';
+    return;
+  }
+  data.forEach(function(emp) {
+    var ageDetails  = _calcAge(emp.dob);
+    var workDetails = _calcAge(emp.startDate);
+    var badge       = _attBadge(emp.statusToday);
+    var img         = emp.profileImg || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
+    html +=
+      '<tr>' +
+      '<td class="text-center"><img src="' + img + '" class="rounded-circle border cursor-pointer"' +
+        ' width="38" height="38" onclick="viewProfileImage(\'' + (emp.profileImg||'') + '\')"></td>' +
+      '<td class="fw-bold text-primary small">' + (emp.code||'—') + '</td>' +
+      '<td><div class="fw-bold">' + (emp.name||'—') + '</div>' +
+        '<div class="text-muted small">' + (emp.dept||'—') + ' | ' + (emp.position||'—') + '</div></td>' +
+      '<td class="text-center"><div class="small fw-bold">' + (emp.dob||'-') + '</div>' +
+        '<div class="text-muted" style="font-size:11px">' + ageDetails + '</div></td>' +
+      '<td class="text-center"><div class="small fw-bold">' + (emp.startDate||'-') + '</div>' +
+        '<div class="text-info" style="font-size:11px">' + workDetails + '</div></td>' +
+      '<td class="text-center">' + badge + '</td>' +
+      '<td class="text-center pe-4">' +
+        '<div class="btn-group btn-group-sm mb-1">' +
+          '<button class="btn btn-outline-warning" onclick="editEmp(\'' + emp.id + '\')" title="แก้ไข"><i class="bi bi-pencil-square"></i></button>' +
+          '<button class="btn btn-outline-info" onclick="openLeaveRequest(\'' + emp.id + '\')" title="ขอลา"><i class="bi bi-calendar2-check"></i></button>' +
+          '<button class="btn btn-outline-secondary" style="font-size:10px" onclick="confirmResign(\'' + emp.id + '\')" title="แจ้งออก">ลาออก</button>' +
+        '</div>' +
+        '<div class="mt-1">' +
+          '<button class="btn btn-link btn-sm p-0 text-danger text-decoration-none" style="font-size:11px" onclick="printCert(\'' + emp.id + '\')">' +
+            '<i class="bi bi-file-earmark-pdf"></i> หนังสือรับรอง</button>' +
+        '</div>' +
+      '</td></tr>';
+  });
+  document.getElementById('empTableBody').innerHTML = html;
+}
+
+// ─── ค้นหา ───────────────────────────────────────────────────
+function filterEmployees() {
+  var val = (document.getElementById('empSearchInput').value || '').toLowerCase();
+  var filtered = employeeCache.filter(function(e) {
+    return (e.name  && e.name.toLowerCase().includes(val)) ||
+           (e.code  && e.code.toLowerCase().includes(val)) ||
+           (e.dept  && e.dept.toLowerCase().includes(val));
+  });
+  renderEmployeeTable(filtered);
+}
+
+// ─── เปิด Modal เพิ่มพนักงานใหม่ ─────────────────────────────
+function openAddEmpModal() {
+  document.getElementById('emp-id').value      = '';
+  document.getElementById('emp-code').value    = '';
+  document.getElementById('emp-name').value    = '';
+  document.getElementById('emp-dept').value    = '';
+  document.getElementById('emp-position').value= '';
+  document.getElementById('emp-dob').value     = '';
+  document.getElementById('emp-start').value   = '';
+  document.getElementById('emp-salary').value  = '';
+  document.getElementById('emp-phone').value   = '';
+  document.getElementById('emp-email').value   = '';
+  document.getElementById('emp-modal-err').classList.add('d-none');
+  document.getElementById('empModalTitle').innerHTML =
+    '<i class="bi bi-person-plus-fill me-2 text-primary"></i>เพิ่มพนักงานใหม่';
+  document.getElementById('empSaveBtn').disabled = false;
+  new bootstrap.Modal(document.getElementById('empModal')).show();
+}
+
+// ─── เปิด Modal แก้ไขพนักงาน ─────────────────────────────────
+function editEmp(empId) {
+  var emp = employeeCache.find(function(e){ return String(e.id) === String(empId); });
+  if (!emp) { alert('ไม่พบข้อมูลพนักงาน'); return; }
+  document.getElementById('emp-id').value      = emp.id      || '';
+  document.getElementById('emp-code').value    = emp.code    || '';
+  document.getElementById('emp-name').value    = emp.name    || '';
+  document.getElementById('emp-dept').value    = emp.dept    || '';
+  document.getElementById('emp-position').value= emp.position|| '';
+  document.getElementById('emp-dob').value     = emp.dob     || '';
+  document.getElementById('emp-start').value   = emp.startDate || '';
+  document.getElementById('emp-salary').value  = emp.baseSalary || emp.salary || '';
+  document.getElementById('emp-phone').value   = emp.phone   || '';
+  document.getElementById('emp-email').value   = emp.email   || '';
+  document.getElementById('emp-modal-err').classList.add('d-none');
+  document.getElementById('empModalTitle').innerHTML =
+    '<i class="bi bi-pencil-square me-2 text-warning"></i>แก้ไขข้อมูลพนักงาน: ' + emp.name;
+  document.getElementById('empSaveBtn').disabled = false;
+  new bootstrap.Modal(document.getElementById('empModal')).show();
+}
+
+// ─── บันทึกพนักงาน (เพิ่ม / แก้ไข) ──────────────────────────
+function saveEmpFromModal() {
+  var code = document.getElementById('emp-code').value.trim();
+  var name = document.getElementById('emp-name').value.trim();
+  var errEl = document.getElementById('emp-modal-err');
+
+  if (!code || !name) {
+    errEl.textContent = 'กรุณากรอกรหัสพนักงานและชื่อ-นามสกุล';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  var payload = {
+    id:         document.getElementById('emp-id').value.trim(),
+    code:       code,
+    name:       name,
+    dept:       document.getElementById('emp-dept').value.trim(),
+    position:   document.getElementById('emp-position').value.trim(),
+    dob:        document.getElementById('emp-dob').value.trim(),
+    startDate:  document.getElementById('emp-start').value.trim(),
+    baseSalary: parseFloat(document.getElementById('emp-salary').value) || 0,
+    phone:      document.getElementById('emp-phone').value.trim(),
+    email:      document.getElementById('emp-email').value.trim()
+  };
+
+  var btn = document.getElementById('empSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>กำลังบันทึก...';
+  errEl.classList.add('d-none');
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
+      if (res && res.success === false) {
+        errEl.textContent = res.message || 'บันทึกไม่สำเร็จ';
+        errEl.classList.remove('d-none');
+        return;
+      }
+      bootstrap.Modal.getInstance(document.getElementById('empModal')).hide();
+      if (typeof AppAlert !== 'undefined') {
+        AppAlert.success('บันทึกสำเร็จ', 'ข้อมูลพนักงาน ' + name + ' ถูกบันทึกแล้ว');
+      }
+      loadEmployees();
+    })
+    .withFailureHandler(function(err) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-save me-1"></i>บันทึก';
+      errEl.textContent = 'เกิดข้อผิดพลาด: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ');
+      errEl.classList.remove('d-none');
+    })
+    .saveEmployee(payload);
+}
+
+// ─── ลาออก / แจ้งออก ─────────────────────────────────────────
+function confirmResign(empId) {
+  var emp = employeeCache.find(function(e){ return String(e.id) === String(empId); });
+  var name = emp ? emp.name : 'พนักงานรายนี้';
+  if (!confirm('แจ้งพนักงาน "' + name + '" ออกจากงาน?\n\nการดำเนินการนี้จะเปลี่ยนสถานะเป็น Inactive')) return;
+
+  google.script.run
+    .withSuccessHandler(function() {
+      if (typeof AppAlert !== 'undefined') AppAlert.success('บันทึกสำเร็จ', name + ' แจ้งออกเรียบร้อย');
+      else alert('บันทึกสำเร็จ: ' + name + ' แจ้งออกเรียบร้อย');
+      loadEmployees();
+    })
+    .withFailureHandler(function(err) {
+      alert('เกิดข้อผิดพลาด: ' + (err && err.message ? err.message : 'ไม่ทราบสาเหตุ'));
+    })
+    .resignEmployee({ empId: empId });
+}
+
+// ─── ขอลา ─────────────────────────────────────────────────────
+function openLeaveRequest(empId) {
+  var emp = employeeCache.find(function(e){ return String(e.id) === String(empId); });
+  alert('ฟังก์ชันขอลา สำหรับ: ' + (emp ? emp.name : empId) + '\n\n(จะเพิ่มในเวอร์ชันถัดไป)');
+}
+
+// ─── พิมพ์หนังสือรับรอง ───────────────────────────────────────
+function printCert(empId) {
+  var emp = employeeCache.find(function(e){ return String(e.id) === String(empId); });
+  alert('ออกหนังสือรับรองเงินเดือน สำหรับ: ' + (emp ? emp.name : empId) + '\n\n(ต้องเชื่อมต่อ GAS เพื่อออกเอกสาร PDF)');
+}
+
+// ─── ดูรูปโปรไฟล์ ─────────────────────────────────────────────
+function viewProfileImage(url) {
+  if (!url) {
+    if (typeof AppAlert !== 'undefined') AppAlert.error('ไม่พบรูปภาพ', 'กรุณาอัปโหลดรูปพนักงานก่อน');
+    else alert('ไม่พบรูปภาพ');
+    return;
+  }
+  document.getElementById('viewProfileImg').src = url;
+  new bootstrap.Modal(document.getElementById('profileImageModal')).show();
+}
+
+// ─── helpers ─────────────────────────────────────────────────
+function _calcAge(dateStr) {
+  if (!dateStr || dateStr === '-') return '-';
+  try {
+    var p = dateStr.split('/');
+    var d = new Date(+p[2], +p[1]-1, +p[0]);
+    var now = new Date();
+    var y = now.getFullYear() - d.getFullYear();
+    var m = now.getMonth() - d.getMonth();
+    if (m < 0) { y--; m += 12; }
+    return y + ' ปี ' + m + ' เดือน';
+  } catch(e) { return '-'; }
+}
+
+function _attBadge(status) {
+  var map = {
+    'มาทำงาน': 'bg-success-subtle text-success border-success',
+    'สาย':     'bg-warning-subtle text-warning border-warning',
+    'ขาด':     'bg-danger-subtle  text-danger  border-danger',
+    'ลา':      'bg-info-subtle    text-info    border-info'
+  };
+  var cls = map[status];
+  if (cls) return '<span class="badge ' + cls + ' border rounded-pill px-2">' + status + '</span>';
+  return '<span class="badge bg-light text-muted border rounded-pill px-2">ยังไม่ลงเวลา</span>';
+}
+
+function _loadDeptDatalist() {
+  var dl = document.getElementById('emp-dept-list');
+  if (!dl) return;
+  // สร้าง unique dept list จาก employeeCache
+  var depts = [];
+  employeeCache.forEach(function(e) {
+    if (e.dept && !depts.includes(e.dept)) depts.push(e.dept);
+  });
+  dl.innerHTML = depts.map(function(d){ return '<option value="' + d + '">'; }).join('');
+}
+
+// loadEmployees() เรียกจาก _PAGE_INIT ใน index.html โดยตรง
+</script>
