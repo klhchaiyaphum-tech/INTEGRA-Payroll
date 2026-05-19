@@ -138,46 +138,49 @@
 .scan-msg.ok  { color: #69f0ae; }
 .scan-msg.err { color: #ff6b6b; }
 
-/* ── Check-in / Check-out buttons ── */
+/* ── Check-in / Check-out buttons — fixed bottom bar ── */
 .scan-btns {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-  max-width: 360px;
+  gap: 0;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 .btn-checkin, .btn-checkout {
   border: none;
-  border-radius: 18px;
-  padding: 18px 10px;
-  font-size: 1rem;
+  border-radius: 0;
+  padding: 22px 10px 24px;
+  font-size: 1.15rem;
   font-weight: 700;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  transition: transform .12s, opacity .12s;
+  transition: filter .12s, transform .1s;
   font-family: 'Sarabun', sans-serif;
 }
-.btn-checkin:active, .btn-checkout:active { transform: scale(0.96); }
-.btn-checkin  {
+.btn-checkin:active  { filter: brightness(0.85); transform: scale(0.98); }
+.btn-checkout:active { filter: brightness(0.85); transform: scale(0.98); }
+.btn-checkin {
   background: linear-gradient(135deg, #00c851, #00962d);
   color: white;
-  box-shadow: 0 6px 20px rgba(0,200,81,0.35);
 }
 .btn-checkout {
   background: linear-gradient(135deg, #ff6d00, #d45600);
   color: white;
-  box-shadow: 0 6px 20px rgba(255,109,0,0.35);
 }
 .btn-checkin .icon, .btn-checkout .icon {
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   line-height: 1;
 }
 .btn-checkin:disabled, .btn-checkout:disabled {
-  opacity: 0.5; cursor: not-allowed;
+  opacity: 0.45; cursor: not-allowed; filter: grayscale(0.4);
 }
+/* push body content above bottom bar */
+#scan-wrap { padding-bottom: calc(100px + env(safe-area-inset-bottom, 0px)); }
 
 /* ── Result card ── */
 .result-card {
