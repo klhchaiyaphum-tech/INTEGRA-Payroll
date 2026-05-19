@@ -112,6 +112,15 @@
     }
     .portal-logout-btn:active { opacity: 0.7; }
 
+    /* Resign link — subtle */
+    .resign-link {
+      font-size: 0.72rem; color: rgba(255,255,255,0.3);
+      margin-top: 10px; cursor: pointer;
+      text-decoration: underline; text-underline-offset: 2px;
+      letter-spacing: 0.3px;
+    }
+    .resign-link:active { color: rgba(255,180,180,0.6); }
+
     /* ══ PAGE 2 — SCAN ══ */
     #scan-page {
       background: linear-gradient(160deg, #1a2226 0%, #2c5f7a 55%, #1a3a4a 100%);
@@ -330,6 +339,7 @@
     <button class="portal-logout-btn" onclick="if(confirm('ออกจากระบบ?')) location.href='index.html'">
       <i class="bi bi-box-arrow-left"></i> ออกจากระบบ
     </button>
+    <div class="resign-link" onclick="alert('กรุณาติดต่อฝ่ายบุคคลเพื่อยื่นใบลาออก')">แจ้งลาออก</div>
   </div>
 
   <!-- ══ PAGE: ลงเวลา ══ -->
