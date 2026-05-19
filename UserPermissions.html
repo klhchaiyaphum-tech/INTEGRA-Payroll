@@ -1,0 +1,172 @@
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h4 class="fw-bold mb-0"><i class="bi bi-person-gear me-2 text-primary"></i>จัดการสิทธิ์ผู้ใช้</h4>
+    <button class="btn btn-primary btn-sm rounded-pill" onclick="openAddUserModal()">
+      <i class="bi bi-person-plus me-1"></i> เพิ่มผู้ใช้
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-0">
+      <div id="perm-table-wrap" class="p-4 text-center text-muted">
+        <div class="spinner-border spinner-border-sm me-2"></div> กำลังโหลด...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0">
+        <h6 class="modal-title fw-bold">เพิ่ม / แก้ไขผู้ใช้</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="modal-user-id">
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Username *</label>
+          <input type="text" id="modal-username" class="form-control" placeholder="ชื่อผู้ใช้">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Password / รหัสผ่าน *</label>
+          <input type="text" id="modal-password" class="form-control" placeholder="รหัสผ่าน">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">ชื่อ-นามสกุล</label>
+          <input type="text" id="modal-name" class="form-control" placeholder="ชื่อ นามสกุล">
+        </div>
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">บทบาท</label>
+          <select id="modal-role" class="form-select">
+            <option value="admin">Admin</option>
+            <option value="approver">Approver</option>
+            <option value="staff" selected>Staff</option>
+          </select>
+        </div>
+        <div id="modal-err" class="alert alert-danger d-none small py-2"></div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">ยกเลิก</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveUserFromModal()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+var _permPages = ['dashboard','employees','departments','attendance','payroll','salary-records','salary-items','deduction-types','user-permissions','config'];
+var _permLabels = {
+  'dashboard':'แดชบอร์ด','employees':'พนักงาน','departments':'แผนก',
+  'attendance':'ตารางลงเวลา','payroll':'คำนวณเงินเดือน','salary-records':'ประวัติการจ่าย',
+  'salary-items':'รายการเงินเดือน','deduction-types':'ประเภทการหัก',
+  'user-permissions':'สิทธิ์ผู้ใช้','config':'ตั้งค่าระบบ'
+};
+var _permUsers = [];
+
+function loadUserPermissions() {
+  var wrap = document.getElementById('perm-table-wrap');
+  google.script.run
+    .withSuccessHandler(function(users) {
+      _permUsers = users || [];
+      renderPermTable();
+    })
+    .withFailureHandler(function(err) {
+      if (wrap) wrap.innerHTML = '<div class="alert alert-warning small m-3">ไม่สามารถโหลดข้อมูลได้: ' + (err.message||err) + '</div>';
+    })
+    .getAdminUserList({});
+}
+
+function renderPermTable() {
+  var wrap = document.getElementById('perm-table-wrap');
+  if (!wrap) return;
+  if (_permUsers.length === 0) {
+    wrap.innerHTML = '<p class="text-muted small p-3">ไม่มีผู้ใช้ในระบบ</p>';
+    return;
+  }
+
+  var head = '<th class="small text-muted" style="min-width:120px">ผู้ใช้</th>' +
+             '<th class="small text-muted">บทบาท</th>' +
+             _permPages.map(function(p){ return '<th class="small text-muted text-center" style="min-width:90px">' + (_permLabels[p]||p) + '</th>'; }).join('') +
+             '<th></th>';
+
+  var rows = _permUsers.map(function(u, idx) {
+    var allowed = new Set((u.permissions||'').split(',').map(function(s){return s.trim();}));
+    var cells = _permPages.map(function(p) {
+      var chk = allowed.has(p) ? 'checked' : '';
+      return '<td class="text-center"><input type="checkbox" ' + chk + ' onchange="onPermChange(' + idx + ',\'' + p + '\',this.checked)"></td>';
+    }).join('');
+    var roleBadge = u.role === 'admin' ? 'bg-danger' : u.role === 'approver' ? 'bg-warning text-dark' : 'bg-secondary';
+    return '<tr>' +
+      '<td><div class="fw-semibold small">' + (u.name||u.username) + '</div>' +
+           '<div class="text-muted" style="font-size:0.75rem">@' + u.username + '</div></td>' +
+      '<td><span class="badge ' + roleBadge + ' rounded-pill">' + u.role + '</span></td>' +
+      cells +
+      '<td><button class="btn btn-sm btn-outline-danger rounded-circle" onclick="confirmDeleteUser(' + idx + ')" title="ลบ"><i class="bi bi-trash"></i></button></td>' +
+      '</tr>';
+  }).join('');
+
+  wrap.innerHTML = '<div class="table-responsive"><table class="table table-hover align-middle mb-0">' +
+    '<thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function onPermChange(idx, page, checked) {
+  var user = _permUsers[idx];
+  if (!user) return;
+  var perms = new Set((user.permissions||'').split(',').map(function(s){return s.trim();}).filter(Boolean));
+  if (checked) perms.add(page); else perms.delete(page);
+  user.permissions = Array.from(perms).join(',');
+
+  google.script.run
+    .withFailureHandler(function(err){ console.warn('savePermissions error', err); })
+    .saveUserPermissions({ userId: user.id, permissions: user.permissions });
+}
+
+function openAddUserModal() {
+  document.getElementById('modal-user-id').value = '';
+  document.getElementById('modal-username').value = '';
+  document.getElementById('modal-password').value = '';
+  document.getElementById('modal-name').value = '';
+  document.getElementById('modal-role').value = 'staff';
+  document.getElementById('modal-err').classList.add('d-none');
+  var m = new bootstrap.Modal(document.getElementById('addUserModal'));
+  m.show();
+}
+
+function saveUserFromModal() {
+  var username = document.getElementById('modal-username').value.trim();
+  var password = document.getElementById('modal-password').value.trim();
+  var name     = document.getElementById('modal-name').value.trim();
+  var role     = document.getElementById('modal-role').value;
+  var errEl    = document.getElementById('modal-err');
+  errEl.classList.add('d-none');
+
+  if (!username || !password) {
+    errEl.textContent = 'กรุณากรอก username และรหัสผ่าน';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(res) {
+      bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+      loadUserPermissions();
+    })
+    .withFailureHandler(function(err) {
+      errEl.textContent = 'เกิดข้อผิดพลาด: ' + (err.message||err);
+      errEl.classList.remove('d-none');
+    })
+    .saveAdminUser({ username, password, name, role, permissions: '' });
+}
+
+function confirmDeleteUser(idx) {
+  var user = _permUsers[idx];
+  if (!user) return;
+  if (!confirm('ลบผู้ใช้ "' + user.username + '" ?')) return;
+  google.script.run
+    .withSuccessHandler(function(){ loadUserPermissions(); })
+    .withFailureHandler(function(err){ alert('เกิดข้อผิดพลาด: ' + (err.message||err)); })
+    .deleteAdminUser({ userId: user.id });
+}
+</script>

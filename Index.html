@@ -1,129 +1,369 @@
 <!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
-  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>INTEGRA Payroll</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-  <?!= include('Theme'); ?>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
-    body { margin: 0; padding: 0; background: #ecf0f5; overflow: hidden; font-family: 'Sarabun', sans-serif; }
-    .wrapper { display: flex; width: 100vw; height: 100vh; }
-    .sidebar { width: 250px; min-width: 250px; background: #222d32; color: white; height: 100vh; flex-shrink: 0; }
-    .sidebar-header { padding: 20px; background: #1a2226; text-align: center; }
-    .nav-label { padding: 12px 20px 5px 20px; font-size: 11px; color: #4b646f; background: #1a2226; text-transform: uppercase; font-weight: bold; }
-    .sidebar-link { display: block; padding: 12px 20px; color: #b8c7ce; text-decoration: none; font-size: 14px; border-left: 3px solid transparent; cursor: pointer; }
-    .sidebar-link:hover, .sidebar-link.active { background: #1e282c; color: white; border-left: 3px solid #3c8dbc; }
-    #main-content { flex-grow: 1; overflow-y: auto; padding: 25px; background: #ecf0f5; }
-    #login-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #222d32; z-index: 9999; display: flex; align-items: center; justify-content: center; }
+    body { margin:0; padding:0; background:#ecf0f5; overflow:hidden; font-family:'Sarabun',sans-serif; }
+    .wrapper { display:flex; width:100vw; height:100vh; }
+    .sidebar { width:250px; min-width:250px; background:#222d32; color:white; height:100vh; flex-shrink:0; overflow-y:auto; }
+    .sidebar-header { padding:20px; background:#1a2226; text-align:center; }
+    .nav-label { padding:12px 20px 5px; font-size:11px; color:#4b646f; background:#1a2226; text-transform:uppercase; font-weight:bold; }
+    .sidebar-link { display:block; padding:12px 20px; color:#b8c7ce; text-decoration:none; font-size:14px; border-left:3px solid transparent; cursor:pointer; }
+    .sidebar-link:hover, .sidebar-link.active { background:#1e282c; color:white; border-left:3px solid #3c8dbc; }
+    #main-content { flex-grow:1; overflow-y:auto; padding:25px; background:#ecf0f5; }
+    #login-mask { position:fixed; top:0; left:0; width:100%; height:100vh; background:#222d32; z-index:9999; display:flex; align-items:center; justify-content:center; }
+    .page-section { display:none; }
+    .page-section.active { display:block; }
+    #loading-spinner { text-align:center; padding:60px; color:#888; }
+    /* Staff mode — no sidebar, full width */
+    body.staff-mode #main-content { padding:0; }
   </style>
 </head>
-<body class="theme-1">
+<body>
 
-  <div id="login-mask">
-    <div class="card shadow-lg border-0" style="width: 100%; max-width: 400px; border-radius: 15px;">
-      <div class="card-body p-5">
-        <?!= include('Login'); ?>
+<!-- ============ LOGIN MASK ============ -->
+<div id="login-mask">
+  <div class="card shadow-lg border-0" style="width:100%;max-width:420px;border-radius:15px;">
+    <div class="card-body p-5">
+      <div class="text-center mb-4">
+        <div style="width:70px;height:70px;background:linear-gradient(135deg,#3c8dbc,#1a2226);border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">
+          <i class="bi bi-shield-lock-fill text-white fs-2"></i>
+        </div>
+        <h4 class="mt-3 fw-bold text-dark">INTEGRA Payroll</h4>
+        <p class="text-muted small">ระบบบริหารเงินเดือน</p>
       </div>
+      <div id="login-error" class="alert alert-danger d-none small py-2"></div>
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">ชื่อผู้ใช้</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-person"></i></span>
+          <input type="text" id="login-username" class="form-control" placeholder="username" autocomplete="username">
+        </div>
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold small">รหัสผ่าน</label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-lock"></i></span>
+          <input type="password" id="login-password" class="form-control" placeholder="password" autocomplete="current-password">
+        </div>
+      </div>
+      <button class="btn btn-primary w-100 fw-bold" onclick="doLogin()">
+        <i class="bi bi-box-arrow-in-right me-1"></i> เข้าสู่ระบบ
+      </button>
+      <hr class="my-3">
+      <p class="text-center text-muted small mb-0">พนักงาน: สแกน QR Code หรือขอ link จากฝ่ายบุคคล</p>
     </div>
   </div>
+</div>
 
-  <div id="main-app" class="wrapper d-none">
-    
-    <div id="sidebar-admin" class="sidebar shadow d-none">
-      <div class="sidebar-header"><h5 class="mb-0 fw-bold">INTEGRA ADMIN</h5></div>
-      <div class="nav-label">เมนูหลัก</div>
-      <a class="sidebar-link active" onclick="showPage('page-dashboard', this)"><i class="bi bi-speedometer2 me-2"></i> แดชบอร์ด</a>
-      
-      <div class="nav-label">จัดการข้อมูล</div>
-      <a class="sidebar-link" onclick="showPage('page-employees', this)"><i class="bi bi-people me-2"></i> พนักงาน</a>
-      
-      <div class="nav-label">ระบบเงินเดือน (Flow)</div>
-      <a class="sidebar-link" onclick="showPage('page-attendance', this)"><i class="bi bi-calendar-check me-2"></i> 1. ตารางลงเวลา</a>
-      <a class="sidebar-link" onclick="showPage('page-payroll', this)"><i class="bi bi-cash-stack me-2"></i> 2. คำนวณเงินเดือน</a>
-      <a class="sidebar-link" onclick="showPage('page-salary-records', this)"><i class="bi bi-file-earmark-text me-2"></i> 3. ประวัติการจ่ายเงิน</a>
-      
-      <div class="nav-label">การตั้งค่า</div>
-      <a class="sidebar-link" onclick="showPage('page-config', this)"><i class="bi bi-gear me-2"></i> ตั้งค่า</a>
-    </div>
+<!-- ============ MAIN APP ============ -->
+<div id="main-app" class="wrapper d-none">
 
-    <div id="sidebar-staff" class="sidebar shadow d-none">
-      <div class="sidebar-header"><h5 class="mb-0 fw-bold">EMPLOYEE HUB</h5></div>
-      <div class="nav-label">เมนูพนักงาน</div>
-      <a class="sidebar-link active" onclick="showPage('page-employee-portal', this)"><i class="bi bi-house-heart me-2"></i> หน้าแรกของฉัน</a>
-      <a class="sidebar-link" onclick="showPage('page-scan', this)"><i class="bi bi-qr-code-scan me-2"></i> สแกนลงเวลา</a>
+  <!-- ADMIN / APPROVER SIDEBAR -->
+  <div id="sidebar-admin" class="sidebar shadow d-none">
+    <div class="sidebar-header">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-layers me-2"></i>INTEGRA</h5>
+      <small class="text-secondary">Admin Panel</small>
     </div>
+    <div class="nav-label">เมนูหลัก</div>
+    <a class="sidebar-link active" data-perm="dashboard" onclick="showPage('page-dashboard',this)"><i class="bi bi-speedometer2 me-2"></i> แดชบอร์ด</a>
 
-    <div id="main-content">
-      <div id="page-dashboard" class="page-section d-none"><?!= include('Dashboard'); ?></div>
-      <div id="page-employees" class="page-section d-none"><?!= include('Employees'); ?></div>
-      
-      <div id="page-attendance" class="page-section d-none"><?!= include('Attendance'); ?></div>
-      <div id="page-payroll" class="page-section d-none"><?!= include('Payroll'); ?></div>
-      <div id="page-salary-records" class="page-section d-none"><?!= include('Salary_records'); ?></div>
-      
-      <div id="page-employee-portal" class="page-section d-none"><?!= include('ForAttenemployee'); ?></div>
-      <div id="page-scan" class="page-section d-none"><?!= include('Scanemployee'); ?></div>
-      <div id="page-register" class="page-section d-none"><?!= include('Registeremployee'); ?></div>
-      
-      <div id="page-config" class="page-section d-none"><?!= include('Config'); ?></div>
-    </div>
+    <div class="nav-label">จัดการข้อมูล</div>
+    <a class="sidebar-link" data-perm="employees" onclick="showPage('page-employees',this)"><i class="bi bi-people me-2"></i> พนักงาน</a>
+    <a class="sidebar-link" data-perm="departments" onclick="showPage('page-departments',this)"><i class="bi bi-diagram-3 me-2"></i> แผนก</a>
+
+    <div class="nav-label">ระบบเงินเดือน</div>
+    <a class="sidebar-link" data-perm="attendance" onclick="showPage('page-attendance',this)"><i class="bi bi-calendar-check me-2"></i> 1. ตารางลงเวลา</a>
+    <a class="sidebar-link" data-perm="payroll" onclick="showPage('page-payroll',this)"><i class="bi bi-cash-stack me-2"></i> 2. คำนวณเงินเดือน</a>
+    <a class="sidebar-link" data-perm="salary-records" onclick="showPage('page-salary-records',this)"><i class="bi bi-file-earmark-text me-2"></i> 3. ประวัติการจ่าย</a>
+    <a class="sidebar-link" data-perm="salary-items" onclick="showPage('page-salary-items',this)"><i class="bi bi-tags me-2"></i> รายการเงินเดือน</a>
+    <a class="sidebar-link" data-perm="deduction-types" onclick="showPage('page-deduction-types',this)"><i class="bi bi-dash-circle me-2"></i> ประเภทการหัก</a>
+
+    <div class="nav-label">การตั้งค่า</div>
+    <a class="sidebar-link" data-perm="user-permissions" onclick="showPage('page-user-permissions',this)"><i class="bi bi-person-gear me-2"></i> สิทธิ์ผู้ใช้</a>
+    <a class="sidebar-link" data-perm="config" onclick="showPage('page-config',this)"><i class="bi bi-gear me-2"></i> ตั้งค่าระบบ</a>
+
+    <div class="nav-label">บัญชีของฉัน</div>
+    <a class="sidebar-link text-warning" onclick="doLogout()"><i class="bi bi-box-arrow-left me-2"></i> ออกจากระบบ</a>
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // 🚀 ฟังก์ชันเปลี่ยนหน้า (SPA)
-    function showPage(pageId, el) {
-      // ซ่อนทุกหน้าก่อน
-      document.querySelectorAll('.page-section').forEach(p => p.classList.add('d-none'));
-      // เปิดหน้าเป้าหมาย
-      const target = document.getElementById(pageId);
-      if(target) {
-        target.classList.remove('d-none');
-        // ถ้าเข้าหน้า Payroll ให้ดึงข้อมูลทันที (Optional)
-        if(pageId === 'page-payroll') { /* runPayroll(); */ }
-      }
-      
-      // อัปเดตสถานะเมนูใน Sidebar
-      if(el) {
-        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-        el.classList.add('active');
-      }
-    }
+  <!-- STAFF SIDEBAR (minimal) -->
+  <div id="sidebar-staff" class="sidebar shadow d-none">
+    <div class="sidebar-header">
+      <h5 class="mb-0 fw-bold"><i class="bi bi-person-badge me-2"></i>EMPLOYEE</h5>
+      <small class="text-secondary" id="staff-name-display">—</small>
+    </div>
+    <div class="nav-label">เมนูพนักงาน</div>
+    <a class="sidebar-link active" onclick="showPage('page-employee-portal',this)"><i class="bi bi-house-heart me-2"></i> หน้าแรกของฉัน</a>
+    <a class="sidebar-link" onclick="showPage('page-scan',this)"><i class="bi bi-qr-code-scan me-2"></i> สแกนลงเวลา</a>
+    <a class="sidebar-link text-warning" onclick="doLogout()"><i class="bi bi-box-arrow-left me-2"></i> ออกจากระบบ</a>
+  </div>
 
-    // 💰 ฟังก์ชันคำนวณเงินเดือน
-    function runPayroll() {
-      const month = 4; // เมษายน
-      const year = 2026;
-      google.script.run.withSuccessHandler(function(data) {
-        let html = '';
-        data.forEach(item => {
-          html += `
-            <div class="col-md-4">
-              <div class="card border-0 shadow-sm p-3 rounded-4 mb-3">
-                <div class="fw-bold text-primary">${item.name}</div>
-                <div class="small">ยอดสุทธิ: <span class="fs-5 text-dark">฿${item.net.toLocaleString()}</span></div>
-              </div>
-            </div>`;
+  <!-- MAIN CONTENT AREA -->
+  <div id="main-content">
+    <div id="loading-spinner" class="d-none">
+      <div class="spinner-border text-primary" role="status"></div>
+      <p class="mt-2 text-muted">กำลังโหลด...</p>
+    </div>
+
+    <!-- Pages (fragments loaded on demand) -->
+    <div id="page-dashboard" class="page-section"></div>
+    <div id="page-employees" class="page-section"></div>
+    <div id="page-departments" class="page-section"></div>
+    <div id="page-attendance" class="page-section"></div>
+    <div id="page-payroll" class="page-section"></div>
+    <div id="page-salary-records" class="page-section"></div>
+    <div id="page-salary-items" class="page-section"></div>
+    <div id="page-deduction-types" class="page-section"></div>
+    <div id="page-user-permissions" class="page-section"></div>
+    <div id="page-config" class="page-section"></div>
+    <div id="page-employee-portal" class="page-section"></div>
+    <div id="page-scan" class="page-section"></div>
+    <div id="page-register" class="page-section"></div>
+  </div>
+</div>
+
+<!-- ============ SCRIPTS ============ -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="api-bridge.js"></script>
+<script>
+// ──────────────────────────────────────────────
+// GLOBAL STATE  (var so fragments can access via window._currentUser)
+// ──────────────────────────────────────────────
+var _currentUser = null;
+
+// Page → HTML file mapping
+const _PAGE_FILES = {
+  'page-dashboard':        'Dashboard.html',
+  'page-employees':        'Employees.html',
+  'page-departments':      'Departments.html',
+  'page-attendance':       'Attendance.html',
+  'page-payroll':          'Payroll.html',
+  'page-salary-records':   'Salary_records.html',
+  'page-salary-items':     'SalaryItemTypes.html',
+  'page-deduction-types':  'DeductionTypes.html',
+  'page-user-permissions': 'UserPermissions.html',
+  'page-config':           'Config.html',
+  'page-employee-portal':  'ForAttenemployee.html',
+  'page-scan':             'Scanemployee.html',
+  'page-register':         'Registeremployee.html'
+};
+
+// Page → init function to call after fragment loads
+const _PAGE_INIT = {
+  'page-dashboard':        () => { if(typeof updateDashboard==='function') updateDashboard(); },
+  'page-employees':        () => { if(typeof loadEmployees==='function') loadEmployees(); },
+  'page-departments':      () => { if(typeof loadDepartments==='function') loadDepartments(); },
+  'page-attendance':       () => { if(typeof loadAttendance==='function') loadAttendance(); },
+  'page-payroll':          () => { if(typeof loadPayroll==='function') loadPayroll(); },
+  'page-salary-records':   () => { if(typeof loadSalaryRecords==='function') loadSalaryRecords(); },
+  'page-salary-items':     () => { if(typeof loadSalaryItems==='function') loadSalaryItems(); },
+  'page-deduction-types':  () => { if(typeof loadDeductionTypes==='function') loadDeductionTypes(); },
+  'page-user-permissions': () => { if(typeof loadUserPermissions==='function') loadUserPermissions(); },
+  'page-config':           () => { if(typeof initConnectionCard==='function') initConnectionCard(); },
+  'page-employee-portal':  () => { if(typeof loadEmployeePortal==='function') loadEmployeePortal(); },
+  'page-scan':             () => { if(typeof initScan==='function') initScan(); },
+  'page-register':         () => { if(typeof initRegister==='function') initRegister(); }
+};
+
+// Track which pages have been loaded already
+const _loadedPages = new Set();
+
+// ──────────────────────────────────────────────
+// FRAGMENT LOADER
+// ──────────────────────────────────────────────
+function _loadFragment(pageId, callback) {
+  if (_loadedPages.has(pageId)) {
+    if (callback) callback();
+    return;
+  }
+  const file = _PAGE_FILES[pageId];
+  if (!file) { if(callback) callback(); return; }
+
+  const spinner = document.getElementById('loading-spinner');
+  if (spinner) spinner.classList.remove('d-none');
+
+  fetch(file)
+    .then(r => { if(!r.ok) throw new Error(r.status); return r.text(); })
+    .then(html => {
+      const el = document.getElementById(pageId);
+      if (el) {
+        el.innerHTML = html;
+        // Execute any <script> tags in the fragment
+        el.querySelectorAll('script').forEach(old => {
+          const s = document.createElement('script');
+          if (old.src) s.src = old.src;
+          else s.textContent = old.textContent;
+          document.body.appendChild(s);
         });
-        const target = document.getElementById('payroll-result');
-        if(target) target.innerHTML = html;
-      }).calculateMonthlySalary(month, year); // เรียกใช้ฟังก์ชันใน Code.gs
-    }
-
-    // ✅ เมื่อ Login สำเร็จ
-    function loginSuccess(res) {
-      document.getElementById('login-mask').classList.add('d-none');
-      document.getElementById('main-app').classList.remove('d-none');
-      
-      if(res.role === 'admin' || res.role === 'approver') {
-        document.getElementById('sidebar-admin').classList.remove('d-none');
-        showPage('page-dashboard');
-        if(typeof updateDashboard === 'function') updateDashboard();
-      } else {
-        document.getElementById('sidebar-staff').classList.remove('d-none');
-        showPage('page-employee-portal');
       }
+      _loadedPages.add(pageId);
+      if (spinner) spinner.classList.add('d-none');
+      if (callback) callback();
+    })
+    .catch(err => {
+      if (spinner) spinner.classList.add('d-none');
+      const el = document.getElementById(pageId);
+      if (el) el.innerHTML = `<div class="alert alert-warning m-3">⚠️ ไม่พบไฟล์ <strong>${file}</strong><br><small>${err}</small></div>`;
+      _loadedPages.add(pageId); // prevent retry loops
+      if (callback) callback();
+    });
+}
+
+// ──────────────────────────────────────────────
+// PAGE NAVIGATION
+// ──────────────────────────────────────────────
+function showPage(pageId, el) {
+  // Hide all
+  document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+
+  // Update sidebar active state
+  if (el) {
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Load fragment then show
+  _loadFragment(pageId, () => {
+    const target = document.getElementById(pageId);
+    if (target) {
+      target.classList.add('active');
+      _callPageInit(pageId);
     }
-  </script>
+  });
+}
+
+function _callPageInit(pageId) {
+  const fn = _PAGE_INIT[pageId];
+  if (fn) {
+    try { fn(); } catch(e) { console.warn('[_callPageInit] error for', pageId, e); }
+  }
+}
+
+// ──────────────────────────────────────────────
+// ROLE PERMISSIONS
+// ──────────────────────────────────────────────
+const ROLE_DEFAULT_PERMS = {
+  admin:    'dashboard,employees,departments,attendance,payroll,salary-records,salary-items,deduction-types,user-permissions,config',
+  approver: 'dashboard,employees,attendance,payroll,salary-records',
+  staff:    ''  // staff gets portal UI, no admin sidebar
+};
+
+function _applyPermissions(user) {
+  const raw = (user.permissions && user.permissions.trim())
+    ? user.permissions
+    : (ROLE_DEFAULT_PERMS[user.role] || '');
+  const allowed = new Set(raw.split(',').map(s => s.trim()).filter(Boolean));
+
+  document.querySelectorAll('#sidebar-admin .sidebar-link[data-perm]').forEach(link => {
+    const perm = link.getAttribute('data-perm');
+    if (perm && !allowed.has(perm)) {
+      link.style.display = 'none';
+    } else {
+      link.style.display = '';
+    }
+  });
+}
+
+// ──────────────────────────────────────────────
+// LOGIN / LOGOUT
+// ──────────────────────────────────────────────
+function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('login-error');
+  errEl.classList.add('d-none');
+
+  if (!username || !password) {
+    errEl.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(loginSuccess)
+    .withFailureHandler(err => {
+      errEl.textContent = 'เกิดข้อผิดพลาด: ' + (err.message || err);
+      errEl.classList.remove('d-none');
+    })
+    .loginAdmin({ username, password });
+}
+
+// Allow Enter key on password field
+document.addEventListener('DOMContentLoaded', () => {
+  const pw = document.getElementById('login-password');
+  if (pw) pw.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+  const un = document.getElementById('login-username');
+  if (un) un.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+});
+
+function loginSuccess(res) {
+  if (!res || !res.success) {
+    const errEl = document.getElementById('login-error');
+    errEl.textContent = (res && res.message) ? res.message : 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+    errEl.classList.remove('d-none');
+    return;
+  }
+
+  _currentUser = {
+    username:    res.username || '',
+    name:        res.name || res.username || '',
+    role:        res.role || 'staff',
+    empId:       res.empId || '',
+    permissions: res.permissions || ''
+  };
+
+  document.getElementById('login-mask').classList.add('d-none');
+  document.getElementById('main-app').classList.remove('d-none');
+
+  if (res.role === 'admin' || res.role === 'approver') {
+    document.getElementById('sidebar-admin').classList.remove('d-none');
+    document.getElementById('sidebar-staff').classList.add('d-none');
+    _applyPermissions(_currentUser);
+    showPage('page-dashboard', document.querySelector('#sidebar-admin .sidebar-link[data-perm="dashboard"]'));
+  } else {
+    // Staff: show staff sidebar (or no sidebar for pure mobile)
+    document.getElementById('sidebar-staff').classList.remove('d-none');
+    document.getElementById('sidebar-admin').classList.add('d-none');
+    const nameEl = document.getElementById('staff-name-display');
+    if (nameEl) nameEl.textContent = _currentUser.name;
+    showPage('page-employee-portal', document.querySelector('#sidebar-staff .sidebar-link'));
+  }
+}
+
+// Allow walk-up kiosk: employee uses scan without full login
+function goToEmployeePortal() {
+  _currentUser = _currentUser || { username:'', name:'พนักงาน', role:'staff', empId:'', permissions:'' };
+  document.getElementById('login-mask').classList.add('d-none');
+  document.getElementById('main-app').classList.remove('d-none');
+  document.getElementById('sidebar-staff').classList.remove('d-none');
+  document.getElementById('sidebar-admin').classList.add('d-none');
+  showPage('page-scan', null);
+}
+
+function doLogout() {
+  _currentUser = null;
+  _loadedPages.clear();
+  // Reset all page fragments
+  document.querySelectorAll('.page-section').forEach(p => { p.classList.remove('active'); p.innerHTML = ''; });
+  document.getElementById('sidebar-admin').classList.add('d-none');
+  document.getElementById('sidebar-staff').classList.add('d-none');
+  document.getElementById('main-app').classList.add('d-none');
+  document.getElementById('login-mask').classList.remove('d-none');
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').classList.add('d-none');
+}
+
+// Expose for fragments
+window.showPage     = showPage;
+window.doLogout     = doLogout;
+window.loginSuccess = loginSuccess;
+</script>
 </body>
 </html>

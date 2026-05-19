@@ -1,47 +1,230 @@
-<div id="page-employee-portal" class="page-section d-none">
-  <div class="container-fluid py-4">
-    <div class="d-flex align-items-center mb-4">
-      <div id="emp-profile-pic" class="rounded-circle border border-3 border-white shadow-sm" style="width: 70px; height: 70px; background: #ddd; background-size: cover;"></div>
-      <div class="ms-3">
-        <h4 class="mb-0 fw-bold" id="emp-welcome-name">สวัสดีค่ะ</h4>
-        <span class="badge bg-primary rounded-pill" id="emp-welcome-dept">แผนกของคุณ</span>
-      </div>
-    </div>
+<style>
+#portal-wrap {
+  min-height: 100vh;
+  background: linear-gradient(160deg, #1a2226 0%, #3c8dbc 60%, #ecf0f5 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 40px;
+  font-family: 'Sarabun', sans-serif;
+}
+.portal-header {
+  width: 100%;
+  padding: 30px 20px 20px;
+  text-align: center;
+  color: white;
+}
+.portal-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  border: 3px solid rgba(255,255,255,0.5);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem;
+  margin: 0 auto 12px;
+  color: white;
+}
+.portal-name { font-size: 1.4rem; font-weight: 700; }
+.portal-empid { font-size: 0.9rem; opacity: 0.8; }
+.portal-date { font-size: 0.85rem; opacity: 0.7; margin-top: 4px; }
 
-    <div class="row g-2 mb-4">
-      <div class="col-4">
-        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
-          <div class="small text-muted">มางาน</div>
-          <div class="fw-bold text-success" id="emp-stat-present">0</div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
-          <div class="small text-muted">สาย</div>
-          <div class="fw-bold text-warning" id="emp-stat-late">0</div>
-        </div>
-      </div>
-      <div class="col-4">
-        <div class="card border-0 shadow-sm text-center p-2 rounded-4">
-          <div class="small text-muted">คงเหลือลา</div>
-          <div class="fw-bold text-info" id="emp-stat-leave">0</div>
-        </div>
-      </div>
-    </div>
+.portal-card {
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  margin: 16px;
+  width: calc(100% - 32px);
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+}
+.portal-time {
+  font-size: 2.8rem;
+  font-weight: 700;
+  color: #222d32;
+  text-align: center;
+  letter-spacing: 2px;
+}
+.portal-status-row {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 12px;
+}
+.portal-status-item {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #888;
+}
+.portal-status-item .val {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #222d32;
+  display: block;
+}
 
-    <div class="list-group shadow-sm rounded-4 overflow-hidden border-0">
-      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom" onclick="showPage('page-scan'); initScan();">
-        <i class="bi bi-qr-code-scan me-3 text-primary"></i>สแกนลงเวลาเข้า-ออก
-      </a>
-      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom">
-        <i class="bi bi-file-earmark-pdf me-3 text-danger"></i>ดูสลิปเงินเดือน (E-Slip)
-      </a>
-      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0 border-bottom">
-        <i class="bi bi-calendar-plus me-3 text-success"></i>แจ้งลา / ขอ OT
-      </a>
-      <a href="javascript:void(0)" class="list-group-item list-group-item-action py-3 border-0" onclick="showPage('page-register'); initRegister();">
-        <i class="bi bi-person-gear me-3 text-secondary"></i>อัปเดตข้อมูล / ลงทะเบียนรูป
-      </a>
+.bubble-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  padding: 0 16px;
+  width: 100%;
+  max-width: 480px;
+}
+.bubble-btn {
+  background: white;
+  border: none;
+  border-radius: 20px;
+  padding: 24px 12px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  color: #222d32;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.bubble-btn:hover, .bubble-btn:active {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.16);
+}
+.bubble-icon {
+  width: 56px; height: 56px;
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+  color: white;
+}
+.bubble-label { font-size: 0.9rem; font-weight: 600; }
+.bubble-sub   { font-size: 0.75rem; color: #888; }
+
+.logout-link {
+  color: rgba(255,255,255,0.6);
+  font-size: 0.85rem;
+  margin-top: 24px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+</style>
+
+<div id="portal-wrap">
+  <div class="portal-header">
+    <div class="portal-avatar" id="portal-avatar"><i class="bi bi-person-fill"></i></div>
+    <div class="portal-name" id="portal-name">กำลังโหลด...</div>
+    <div class="portal-empid" id="portal-empid"></div>
+    <div class="portal-date" id="portal-date"></div>
+  </div>
+
+  <div class="portal-card">
+    <div class="portal-time" id="portal-clock">--:--:--</div>
+    <div class="portal-status-row">
+      <div class="portal-status-item">
+        <span class="val" id="portal-checkin">—</span>
+        เข้างาน
+      </div>
+      <div class="portal-status-item">
+        <span class="val" id="portal-checkout">—</span>
+        ออกงาน
+      </div>
+      <div class="portal-status-item">
+        <span class="val" id="portal-late">—</span>
+        สาย (นาที)
+      </div>
     </div>
   </div>
+
+  <div class="bubble-grid">
+    <button class="bubble-btn" onclick="goToScan()">
+      <div class="bubble-icon" style="background:linear-gradient(135deg,#3c8dbc,#1a2226)">
+        <i class="bi bi-qr-code-scan"></i>
+      </div>
+      <div>
+        <div class="bubble-label">สแกนลงเวลา</div>
+        <div class="bubble-sub">เช็คอิน / เช็คเอาท์</div>
+      </div>
+    </button>
+
+    <button class="bubble-btn" onclick="goToRegister()">
+      <div class="bubble-icon" style="background:linear-gradient(135deg,#00c851,#007e33)">
+        <i class="bi bi-person-badge"></i>
+      </div>
+      <div>
+        <div class="bubble-label">ลงทะเบียนใบหน้า</div>
+        <div class="bubble-sub">ครั้งแรก / อัพเดต</div>
+      </div>
+    </button>
+
+    <button class="bubble-btn" onclick="viewSlip()">
+      <div class="bubble-icon" style="background:linear-gradient(135deg,#ff6d00,#ff8f00)">
+        <i class="bi bi-file-earmark-text"></i>
+      </div>
+      <div>
+        <div class="bubble-label">สลิปเงินเดือน</div>
+        <div class="bubble-sub">ดูรายการล่าสุด</div>
+      </div>
+    </button>
+
+    <button class="bubble-btn" onclick="leaveRequest()">
+      <div class="bubble-icon" style="background:linear-gradient(135deg,#aa00ff,#7c00e8)">
+        <i class="bi bi-calendar-x"></i>
+      </div>
+      <div>
+        <div class="bubble-label">แจ้งลา / OT</div>
+        <div class="bubble-sub">ส่งคำขอ</div>
+      </div>
+    </button>
+  </div>
+
+  <div class="logout-link" onclick="doLogout()">
+    <i class="bi bi-box-arrow-left me-1"></i>ออกจากระบบ
+  </div>
 </div>
+
+<script>
+(function() {
+  function _tick() {
+    var el = document.getElementById('portal-clock');
+    if (el) el.textContent = new Date().toLocaleTimeString('th-TH', {hour12:false});
+  }
+  _tick();
+  setInterval(_tick, 1000);
+
+  var dateEl = document.getElementById('portal-date');
+  if (dateEl) {
+    var d = new Date();
+    dateEl.textContent = d.toLocaleDateString('th-TH', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+  }
+})();
+
+function loadEmployeePortal() {
+  var u = window._currentUser || {};
+  var nameEl   = document.getElementById('portal-name');
+  var idEl     = document.getElementById('portal-empid');
+  var avatarEl = document.getElementById('portal-avatar');
+
+  if (nameEl)  nameEl.textContent  = u.name  || 'พนักงาน';
+  if (idEl)    idEl.textContent    = u.empId ? 'รหัส: ' + u.empId : '';
+  if (avatarEl && u.name) {
+    avatarEl.innerHTML = '<span style="font-size:1.8rem;font-weight:700">' + u.name.charAt(0) + '</span>';
+  }
+
+  if (u.empId) {
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (!data) return;
+        var ci = document.getElementById('portal-checkin');
+        var co = document.getElementById('portal-checkout');
+        var la = document.getElementById('portal-late');
+        if (ci) ci.textContent = data.timeIn  || '—';
+        if (co) co.textContent = data.timeOut || '—';
+        if (la) la.textContent = (data.lateMin != null) ? data.lateMin : '—';
+      })
+      .getEmployeePortalData({ empId: u.empId });
+  }
+}
+
+function goToScan()     { if (typeof showPage === 'function') showPage('page-scan',     null); }
+function goToRegister() { if (typeof showPage === 'function') showPage('page-register', null); }
+function viewSlip()     { alert('📄 ฟีเจอร์สลิปเงินเดือนกำลังพัฒนา'); }
+function leaveRequest() { alert('📋 ฟีเจอร์แจ้งลา/OT กำลังพัฒนา'); }
+</script>

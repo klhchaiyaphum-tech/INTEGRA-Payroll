@@ -1,74 +1,444 @@
-<div id="page-register" class="page-section d-none">
-  <div class="container-fluid py-4">
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-      <div class="bg-primary p-4 text-white text-center">
-        <h4 class="mb-0">ลงทะเบียนพนักงานใหม่</h4>
-        <p class="small opacity-75 mb-0">ถ่ายรูปและบันทึกพิกัดเพื่อเริ่มใช้งานระบบ</p>
-      </div>
-      <div class="card-body p-4 text-center">
-        <div class="position-relative d-inline-block mb-4">
-          <video id="video" width="300" height="300" autoplay playsinline class="rounded-circle border border-4 border-light shadow-sm" style="object-fit: cover; background: #000;"></video>
-          <canvas id="canvas" width="300" height="300" class="d-none"></canvas>
-          <img id="photo-preview" class="rounded-circle border border-4 border-primary shadow-sm d-none" width="300" height="300" style="object-fit: cover;">
-          <button type="button" onclick="takePhoto()" class="btn btn-primary rounded-circle position-absolute bottom-0 end-0 shadow" style="width: 50px; height: 50px;">
-            <i class="bi bi-camera-fill"></i>
-          </button>
-        </div>
+<style>
+#reg-wrap {
+  min-height: 100vh;
+  background: #f0f4f8;
+  font-family: 'Sarabun', sans-serif;
+}
+.reg-topbar {
+  display: flex; align-items: center;
+  padding: 16px 20px;
+  background: #1a2226;
+  color: white;
+}
+.reg-topbar .back-btn {
+  background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; margin-right: 12px;
+}
+.reg-topbar h5 { margin: 0; font-weight: 700; }
 
-        <div id="location-status" class="alert alert-info small mb-4">
-          <i class="bi bi-geo-alt-fill me-2"></i>กำลังระบุพิกัดบ้านของคุณ...
-        </div>
+.step-bar {
+  display: flex;
+  padding: 16px 20px;
+  background: white;
+  border-bottom: 1px solid #e0e4e8;
+  gap: 8px;
+}
+.step-dot {
+  flex: 1; height: 4px; border-radius: 4px;
+  background: #dee2e6; transition: background .3s;
+}
+.step-dot.done    { background: #00c851; }
+.step-dot.current { background: #3c8dbc; }
 
-        <button id="btn-submit-reg" class="btn btn-success w-100 py-3 fw-bold rounded-pill shadow-sm" onclick="submitRegistration()" disabled>
-          บันทึกข้อมูลลงทะเบียน
-        </button>
-      </div>
-    </div>
+.reg-body {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+
+.step-panel { display: none; }
+.step-panel.active { display: block; }
+
+.step-title {
+  font-size: 1.2rem; font-weight: 700;
+  color: #222d32; margin-bottom: 6px;
+}
+.step-sub {
+  font-size: 0.85rem; color: #888; margin-bottom: 24px;
+}
+
+.face-frame {
+  width: 220px; height: 220px;
+  border-radius: 50%;
+  background: #1a2226;
+  border: 4px solid #3c8dbc;
+  overflow: hidden;
+  margin: 0 auto 16px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+.face-frame video  { width: 100%; height: 100%; object-fit: cover; }
+.face-frame canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0; }
+.face-placeholder  { color: #445; text-align: center; }
+.face-placeholder i { font-size: 3rem; }
+
+.reg-msg {
+  text-align: center;
+  min-height: 20px;
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+.reg-msg.ok  { color: #00c851; }
+.reg-msg.err { color: #dc3545; }
+
+.detect-bar {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #3c8dbc;
+  margin-bottom: 8px;
+  min-height: 18px;
+}
+
+.btn-primary-round {
+  background: #3c8dbc; color: white; border: none;
+  border-radius: 14px; padding: 14px 32px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  width: 100%; margin-top: 8px;
+}
+.btn-success-round {
+  background: #00c851; color: white; border: none;
+  border-radius: 14px; padding: 14px 32px;
+  font-size: 1rem; font-weight: 700; cursor: pointer;
+  width: 100%; margin-top: 8px;
+}
+.btn-outline-round {
+  background: white; color: #3c8dbc; border: 2px solid #3c8dbc;
+  border-radius: 14px; padding: 12px 28px;
+  font-size: 0.95rem; font-weight: 600; cursor: pointer;
+  width: 100%; margin-top: 8px;
+}
+</style>
+
+<div id="reg-wrap">
+  <!-- Top bar -->
+  <div class="reg-topbar">
+    <button class="back-btn" onclick="if(typeof showPage==='function') showPage('page-employee-portal',null)">
+      <i class="bi bi-arrow-left"></i>
+    </button>
+    <h5>ลงทะเบียนใบหน้า</h5>
   </div>
 
-  <script>
-    let userCoords = null;
-    let photoData = null;
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step-dot current" id="sdot-1"></div>
+    <div class="step-dot"         id="sdot-2"></div>
+    <div class="step-dot"         id="sdot-3"></div>
+  </div>
 
-    // เปิดกล้องอัตโนมัติ
-    function initRegister() {
-      navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
-        .then(stream => { document.getElementById('video').srcObject = stream; })
-        .catch(err => { alert("กรุณาอนุญาตการเข้าถึงกล้องค่ะ"); });
+  <div class="reg-body">
 
-      navigator.geolocation.getCurrentPosition(pos => {
-        userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        document.getElementById('location-status').className = "alert alert-success small mb-4";
-        document.getElementById('location-status').innerHTML = `<i class="bi bi-check-circle-fill me-2"></i>ตรวจพบพิกัดแล้ว: ${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)}`;
-        checkRegReady();
-      });
-    }
+    <!-- STEP 1: Employee info -->
+    <div class="step-panel active" id="reg-step-1">
+      <div class="step-title">ขั้นที่ 1 — ข้อมูลพนักงาน</div>
+      <div class="step-sub">กรอกรหัสพนักงานและชื่อก่อนเริ่มสแกนใบหน้า</div>
 
-    function takePhoto() {
-      const video = document.getElementById('video');
-      const canvas = document.getElementById('canvas');
-      const preview = document.getElementById('photo-preview');
-      canvas.getContext('2d').drawImage(video, 0, 0, 300, 300);
-      photoData = canvas.toDataURL('image/jpeg');
-      preview.src = photoData;
-      preview.classList.remove('d-none');
-      video.classList.add('d-none');
-      checkRegReady();
-    }
+      <div class="mb-3">
+        <label class="form-label fw-semibold small">รหัสพนักงาน *</label>
+        <input type="text" id="reg-empid" class="form-control" placeholder="เช่น EMP001">
+      </div>
+      <div class="mb-4">
+        <label class="form-label fw-semibold small">ชื่อ-นามสกุล *</label>
+        <input type="text" id="reg-name" class="form-control" placeholder="ชื่อ นามสกุล">
+      </div>
 
-    function checkRegReady() {
-      if(userCoords && photoData) document.getElementById('btn-submit-reg').disabled = false;
-    }
+      <button class="btn-primary-round" onclick="reg_goStep2()">
+        ถัดไป <i class="bi bi-arrow-right ms-1"></i>
+      </button>
+    </div>
 
-    function submitRegistration() {
-      const btn = document.getElementById('btn-submit-reg');
-      btn.disabled = true;
-      btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> กำลังบันทึก...';
+    <!-- STEP 2: Face scan -->
+    <div class="step-panel" id="reg-step-2">
+      <div class="step-title">ขั้นที่ 2 — สแกนใบหน้า</div>
+      <div class="step-sub">เล็งใบหน้าให้ตรงกลาง รอจนระบบตรวจพบ แล้วกดบันทึก</div>
 
-      google.script.run.withSuccessHandler(res => {
-        AppAlert.success('ลงทะเบียนสำเร็จ', 'ข้อมูลของคุณถูกบันทึกเข้าระบบแล้วค่ะ');
-        showPage('page-employee-portal');
-      }).processRegistration({ photo: photoData, coords: userCoords });
-    }
-  </script>
+      <div class="face-frame" id="reg-face-frame">
+        <div class="face-placeholder" id="reg-face-ph">
+          <i class="bi bi-camera"></i>
+          <div style="font-size:0.8rem;margin-top:8px">กดเปิดกล้อง</div>
+        </div>
+        <video id="reg-video" autoplay playsinline style="display:none"></video>
+        <canvas id="reg-canvas" style="display:none"></canvas>
+      </div>
+
+      <div class="detect-bar" id="reg-detect-bar"></div>
+      <div class="reg-msg" id="reg-msg-2"></div>
+
+      <button class="btn-outline-round" id="reg-btn-cam" onclick="reg_openCamera()">
+        <i class="bi bi-camera me-1"></i> เปิดกล้อง
+      </button>
+      <button class="btn-primary-round" id="reg-btn-capture" onclick="reg_captureDescriptor()" style="display:none">
+        <i class="bi bi-person-check me-1"></i> บันทึกใบหน้า
+      </button>
+    </div>
+
+    <!-- STEP 3: GPS home location -->
+    <div class="step-panel" id="reg-step-3">
+      <div class="step-title">ขั้นที่ 3 — ตำแหน่งบ้าน (ไม่บังคับ)</div>
+      <div class="step-sub">บันทึกพิกัดบ้านเพื่อใช้ตรวจสอบการลงเวลา Work-from-Home</div>
+
+      <div class="text-center mb-3">
+        <i class="bi bi-geo-alt-fill text-primary" style="font-size:3rem"></i>
+      </div>
+      <div class="reg-msg" id="reg-msg-3">กด "ดึงพิกัด GPS" เพื่อบันทึกตำแหน่งปัจจุบัน</div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Latitude</label>
+        <input type="text" id="reg-lat" class="form-control" readonly placeholder="—">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small fw-semibold">Longitude</label>
+        <input type="text" id="reg-lng" class="form-control" readonly placeholder="—">
+      </div>
+
+      <button class="btn-outline-round" onclick="reg_getGPS()">
+        <i class="bi bi-crosshair me-1"></i> ดึงพิกัด GPS
+      </button>
+      <button class="btn-success-round" onclick="reg_submit()">
+        <i class="bi bi-check-circle me-1"></i> ส่งข้อมูลทั้งหมด
+      </button>
+      <button class="btn-outline-round" style="margin-top:8px;border-color:#aaa;color:#888" onclick="reg_submit()">
+        ข้ามขั้นตอนนี้
+      </button>
+    </div>
+
+  </div>
 </div>
+
+<!-- face-api.js loaded on demand in step 2 -->
+<script>
+(function(){
+  var _regEmpId = '', _regName = '';
+  var _descriptor = null;
+  var _photoB64   = null;
+  var _detectionLoop = null;
+  var _faceApiReady  = false;
+  var _videoStream   = null;
+
+  function setMsg(step, txt, cls) {
+    var el = document.getElementById('reg-msg-' + step);
+    if (!el) return;
+    el.textContent = txt;
+    el.className = 'reg-msg ' + (cls||'');
+  }
+
+  function setDetect(txt) {
+    var el = document.getElementById('reg-detect-bar');
+    if (el) el.textContent = txt;
+  }
+
+  function gotoStepDots(step) {
+    for (var i = 1; i <= 3; i++) {
+      var d = document.getElementById('sdot-' + i);
+      if (!d) continue;
+      d.className = 'step-dot' + (i < step ? ' done' : i === step ? ' current' : '');
+    }
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step-panel').forEach(function(p){ p.classList.remove('active'); });
+    var p = document.getElementById('reg-step-' + n);
+    if (p) p.classList.add('active');
+    gotoStepDots(n);
+  }
+
+  // ── Step 1 → 2
+  window.reg_goStep2 = function() {
+    var empId = document.getElementById('reg-empid').value.trim();
+    var name  = document.getElementById('reg-name').value.trim();
+    if (!empId || !name) { alert('กรุณากรอกรหัสพนักงานและชื่อ'); return; }
+    _regEmpId = empId;
+    _regName  = name;
+    showStep(2);
+    // Load face-api.js if not loaded
+    if (!window.faceapi) {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
+      s.onload = function() { _faceApiReady = false; reg_loadModels(); };
+      s.onerror = function() { setMsg(2,'โหลด face-api.js ไม่สำเร็จ — ข้ามการสแกนใบหน้า','err'); };
+      document.head.appendChild(s);
+    } else if (!_faceApiReady) {
+      reg_loadModels();
+    }
+  };
+
+  function reg_loadModels() {
+    var BASE = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
+    setDetect('กำลังโหลดโมเดล AI...');
+    Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(BASE),
+      faceapi.nets.faceLandmark68TinyNet.loadFromUri(BASE),
+      faceapi.nets.faceRecognitionNet.loadFromUri(BASE)
+    ]).then(function() {
+      _faceApiReady = true;
+      setDetect('โมเดล AI พร้อม ✅');
+    }).catch(function(e) {
+      setDetect('โหลดโมเดลไม่สำเร็จ: ' + e.message);
+    });
+  }
+
+  // ── Open camera
+  window.reg_openCamera = function() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      setMsg(2,'กล้องไม่พร้อม — กรุณาใช้ HTTPS หรือลองเบราว์เซอร์อื่น','err');
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:320, height:320 } })
+      .then(function(stream) {
+        _videoStream = stream;
+        var video = document.getElementById('reg-video');
+        var ph    = document.getElementById('reg-face-ph');
+        var btnCam = document.getElementById('reg-btn-cam');
+        var btnCap = document.getElementById('reg-btn-capture');
+        video.srcObject = stream;
+        video.style.display = 'block';
+        if (ph)     ph.style.display = 'none';
+        if (btnCam) btnCam.style.display = 'none';
+        if (btnCap) btnCap.style.display = 'block';
+        setMsg(2,'กล้องพร้อม — เล็งใบหน้าให้ตรงกลาง','');
+        _startDetectionLoop();
+      })
+      .catch(function(e) {
+        setMsg(2,'เปิดกล้องไม่ได้: ' + e.message,'err');
+      });
+  };
+
+  function _startDetectionLoop() {
+    if (_detectionLoop) clearInterval(_detectionLoop);
+    _detectionLoop = setInterval(function() {
+      if (!_faceApiReady || !window.faceapi) { setDetect('รอโมเดล AI...'); return; }
+      var video = document.getElementById('reg-video');
+      if (!video || video.readyState < 2) return;
+      faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+        .then(function(det) {
+          if (det) {
+            var conf = Math.round(det.score * 100);
+            setDetect('✅ พบใบหน้า (' + conf + '%) — พร้อมบันทึก');
+          } else {
+            setDetect('🔍 ไม่พบใบหน้า — ปรับมุมกล้อง...');
+          }
+        })
+        .catch(function(){});
+    }, 800);
+  }
+
+  // ── Capture descriptor
+  window.reg_captureDescriptor = function() {
+    if (!_faceApiReady || !window.faceapi) {
+      setMsg(2,'โมเดล AI ยังไม่พร้อม — รอสักครู่','err');
+      return;
+    }
+    var video = document.getElementById('reg-video');
+    if (!video) return;
+    setMsg(2,'กำลังวิเคราะห์ใบหน้า...','');
+
+    faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks(true)
+      .withFaceDescriptor()
+      .then(function(result) {
+        if (!result || !result.descriptor) {
+          setMsg(2,'❌ ไม่พบใบหน้าชัดเจน — ลองปรับแสงหรือมุมกล้อง','err');
+          return;
+        }
+        _descriptor = Array.from(result.descriptor); // Float32Array → regular Array
+
+        // Capture photo
+        var canvas = document.getElementById('reg-canvas');
+        canvas.width  = video.videoWidth  || 320;
+        canvas.height = video.videoHeight || 320;
+        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+        _photoB64 = canvas.toDataURL('image/jpeg', 0.7);
+
+        // Stop camera
+        if (_videoStream) _videoStream.getTracks().forEach(function(t){ t.stop(); });
+        if (_detectionLoop) clearInterval(_detectionLoop);
+        video.style.display = 'none';
+        canvas.style.display = 'block';
+
+        setMsg(2,'✅ บันทึกใบหน้าสำเร็จ! (' + _descriptor.length + ' dimensions)','ok');
+        setDetect('');
+        document.getElementById('reg-btn-capture').style.display = 'none';
+
+        // Auto advance to step 3
+        setTimeout(function(){ showStep(3); }, 1200);
+      })
+      .catch(function(e) {
+        setMsg(2,'เกิดข้อผิดพลาด: ' + e.message,'err');
+      });
+  };
+
+  // ── Step 3 GPS
+  window.reg_getGPS = function() {
+    setMsg(3,'กำลังดึง GPS...','');
+    if (!navigator.geolocation) { setMsg(3,'เบราว์เซอร์ไม่รองรับ GPS','err'); return; }
+    navigator.geolocation.getCurrentPosition(
+      function(pos) {
+        document.getElementById('reg-lat').value = pos.coords.latitude.toFixed(6);
+        document.getElementById('reg-lng').value = pos.coords.longitude.toFixed(6);
+        setMsg(3,'✅ ได้พิกัดแล้ว','ok');
+      },
+      function(err) { setMsg(3,'GPS error: ' + err.message,'err'); },
+      { timeout: 15000 }
+    );
+  };
+
+  // ── Final submit
+  window.reg_submit = function() {
+    var lat = document.getElementById('reg-lat').value;
+    var lng = document.getElementById('reg-lng').value;
+
+    var payload = {
+      empId:      _regEmpId,
+      name:       _regName,
+      descriptor: _descriptor ? JSON.stringify(_descriptor) : '',
+      photoB64:   _photoB64  || '',
+      lat:        lat || '',
+      lng:        lng || ''
+    };
+
+    var btn = event && event.target;
+    if (btn) { btn.disabled = true; btn.textContent = 'กำลังส่ง...'; }
+
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.success) {
+          setMsg(3,'🎉 ลงทะเบียนสำเร็จ! (' + _regName + ')','ok');
+          if (btn) { btn.textContent = 'เสร็จสิ้น'; }
+          setTimeout(function(){
+            if (typeof showPage === 'function') showPage('page-employee-portal', null);
+          }, 2000);
+        } else {
+          setMsg(3,'เกิดข้อผิดพลาด: ' + (res && res.message ? res.message : 'ไม่ทราบสาเหตุ'),'err');
+          if (btn) { btn.disabled = false; btn.textContent = 'ส่งข้อมูลทั้งหมด'; }
+        }
+      })
+      .withFailureHandler(function(err) {
+        setMsg(3,'เกิดข้อผิดพลาด: ' + (err.message||err),'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'ส่งข้อมูลทั้งหมด'; }
+      })
+      .saveFaceRegistration(payload);
+  };
+
+  // ── initRegister — called by _PAGE_INIT
+  window.initRegister = function() {
+    _descriptor   = null;
+    _photoB64     = null;
+    _faceApiReady = false;
+    if (_detectionLoop) { clearInterval(_detectionLoop); _detectionLoop = null; }
+    if (_videoStream)   { _videoStream.getTracks().forEach(function(t){t.stop();}); _videoStream = null; }
+
+    // Pre-fill from current user
+    var u = window._currentUser || {};
+    var empIdEl = document.getElementById('reg-empid');
+    var nameEl  = document.getElementById('reg-name');
+    if (empIdEl && u.empId) empIdEl.value = u.empId;
+    if (nameEl  && u.name)  nameEl.value  = u.name;
+
+    // Reset UI
+    var video  = document.getElementById('reg-video');
+    var canvas = document.getElementById('reg-canvas');
+    var ph     = document.getElementById('reg-face-ph');
+    var btnCam = document.getElementById('reg-btn-cam');
+    var btnCap = document.getElementById('reg-btn-capture');
+    if (video)  { video.srcObject = null; video.style.display = 'none'; }
+    if (canvas) { canvas.style.display = 'none'; }
+    if (ph)     ph.style.display = 'flex';
+    if (btnCam) btnCam.style.display = 'block';
+    if (btnCap) btnCap.style.display = 'none';
+    document.getElementById('reg-lat').value = '';
+    document.getElementById('reg-lng').value = '';
+    setMsg(2,'','');
+    setMsg(3,'กด "ดึงพิกัด GPS" เพื่อบันทึกตำแหน่งปัจจุบัน','');
+    setDetect('');
+    showStep(1);
+  };
+})();
+</script>

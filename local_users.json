@@ -1,0 +1,5 @@
+[
+  {"id":"admin","username":"admin","password_hash":"1234","role":"admin","name":"ผู้ดูแลระบบ","permissions":""},
+  {"id":"Manager1","username":"manager","password_hash":"1234","role":"approver","name":"ผู้จัดการ","permissions":""},
+  {"id":"HR1","username":"hr","password_hash":"1234","role":"staff","name":"พนักงานฝ่ายบุคคล","permissions":""}
+]
