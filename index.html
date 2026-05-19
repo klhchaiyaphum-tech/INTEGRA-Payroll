@@ -213,11 +213,17 @@ function _loadFragment(pageId, callback) {
     .then(html => {
       const el = document.getElementById(pageId);
       if (el) {
-        el.innerHTML = html;
-        // Execute any <script> tags in the fragment
+        // Fragment เก่าอาจมี <div id="page-xxx" class="page-section d-none"> ครอบอยู่
+        // ดึงเฉพาะ content ข้างใน เพื่อไม่ให้ซ้อน div และไม่โดน d-none ซ่อน
+        const tmp = document.createElement('div');
+        tmp.innerHTML = html;
+        const inner = tmp.querySelector('.page-section') || tmp.querySelector('[id^="page-"]');
+        el.innerHTML = inner ? inner.innerHTML : html;
+
+        // Execute <script> tags ในส่วนที่โหลดมา
         el.querySelectorAll('script').forEach(old => {
           const s = document.createElement('script');
-          if (old.src) s.src = old.src;
+          if (old.src) { s.src = old.src; s.async = false; }
           else s.textContent = old.textContent;
           document.body.appendChild(s);
         });
