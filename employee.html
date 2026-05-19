@@ -251,7 +251,7 @@
       <div class="portal-date"  id="p-date"></div>
       <div class="portal-status-row">
         <div class="portal-status-item"><span class="val" id="p-in">—</span><div class="lbl">เข้างาน</div></div>
-        <div class="portal-status-item"><span class="val" id="p-out">—</span><div class="lbl">ออกงาน</div></div>
+        <div class="portal-status-item"><span class="val" id="p-out">—</span><div class="lbl">เลิกงาน</div></div>
         <div class="portal-status-item"><span class="val" id="p-late">—</span><div class="lbl">สาย (นาที)</div></div>
       </div>
     </div>
@@ -261,7 +261,7 @@
         <div class="bubble-icon" style="background:linear-gradient(135deg,#3c8dbc,#1a2226)">
           <i class="bi bi-camera-fill"></i></div>
         <div class="bubble-label">บันทึกเวลา</div>
-        <div class="bubble-sub">เข้างาน / ออกงาน</div>
+        <div class="bubble-sub">เข้างาน / เลิกงาน</div>
       </button>
       <button class="bubble-btn" onclick="goReg()">
         <div class="bubble-icon" style="background:linear-gradient(135deg,#00c851,#007e33)">
@@ -286,7 +286,7 @@
 
     <div class="today-strip">
       <div class="today-item"><div class="lbl">เข้างาน</div><div class="val" id="s-in">—</div></div>
-      <div class="today-item"><div class="lbl">ออกงาน</div><div class="val" id="s-out">—</div></div>
+      <div class="today-item"><div class="lbl">เลิกงาน</div><div class="val" id="s-out">—</div></div>
       <div class="today-item"><div class="lbl">สาย (นาที)</div><div class="val" id="s-late">—</div></div>
     </div>
 
@@ -295,7 +295,7 @@
         <div class="cam-ring" id="cam-ring">
           <div class="cam-placeholder" id="cam-ph">
             <i class="bi bi-camera"></i>
-            <small>กดปุ่ม<br>เข้างาน / ออกงาน</small>
+            <small>กดปุ่ม<br>เข้างาน / เลิกงาน</small>
           </div>
           <video id="cam-video" autoplay playsinline style="display:none"></video>
           <canvas id="cam-canvas" style="display:none"></canvas>
@@ -328,7 +328,7 @@
     <i class="bi bi-box-arrow-in-right"></i>เข้างาน
   </button>
   <button class="btn-out" id="btn-out" onclick="startScan('OUT')">
-    <i class="bi bi-box-arrow-right"></i>ออกงาน
+    <i class="bi bi-box-arrow-right"></i>เลิกงาน
   </button>
 </div>
 
@@ -523,7 +523,7 @@
     var btns=document.getElementById('action-btns');
     if(card){ card.className='result-card show'+(type==='OUT'?' out-type':''); }
     if(rt) rt.textContent=timeStr;
-    if(rl) rl.textContent=(type==='IN'?'✅ เข้างานสำเร็จ':'🔚 ออกงานสำเร็จ')+' — '+_empName;
+    if(rl) rl.textContent=(type==='IN'?'✅ เข้างานสำเร็จ':'🔚 เลิกงานสำเร็จ')+' — '+_empName;
     if(btns) btns.style.display='none';
     _msg('บันทึกเรียบร้อย','ok');
     _showRetry();

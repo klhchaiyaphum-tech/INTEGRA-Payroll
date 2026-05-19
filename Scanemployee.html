@@ -247,7 +247,7 @@
       <div class="value" id="sc-checkin">—</div>
     </div>
     <div class="status-item">
-      <div class="label">ออกงาน</div>
+      <div class="label">เลิกงาน</div>
       <div class="value" id="sc-checkout">—</div>
     </div>
     <div class="status-item">
@@ -264,7 +264,7 @@
       <div class="camera-frame" id="camera-frame">
         <div class="cam-placeholder" id="cam-placeholder">
           <i class="bi bi-camera"></i>
-          <small>กดเข้างาน/ออกงาน<br>เพื่อเปิดกล้อง</small>
+          <small>กดเข้างาน/เลิกงาน<br>เพื่อเปิดกล้อง</small>
         </div>
         <video id="scan-video" autoplay playsinline style="display:none"></video>
         <canvas id="scan-canvas" style="display:none"></canvas>
@@ -288,7 +288,7 @@
       </button>
       <button class="btn-checkout" id="btn-out" onclick="startScan('OUT')">
         <span class="icon"><i class="bi bi-box-arrow-right"></i></span>
-        ออกงาน
+        เลิกงาน
       </button>
     </div>
 
@@ -502,7 +502,7 @@
 
     if (card)  { card.className = 'result-card show'+(type==='OUT'?' out':''); }
     if (rTime) rTime.textContent = timeStr;
-    if (rLbl)  rLbl.textContent  = (type==='IN'?'✅ เข้างานสำเร็จ':'🔚 ออกงานสำเร็จ')+' — '+name;
+    if (rLbl)  rLbl.textContent  = (type==='IN'?'✅ เข้างานสำเร็จ':'🔚 เลิกงานสำเร็จ')+' — '+name;
     if (btns)  btns.style.display = 'none';
 
     _msg('บันทึกเรียบร้อย','ok');
