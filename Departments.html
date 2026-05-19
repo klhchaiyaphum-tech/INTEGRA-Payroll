@@ -244,14 +244,5 @@
     });
   }
 
-  // Auto-load เมื่อกดเมนูแผนก
-  const deptObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (!mutation.target.classList.contains('d-none')) { loadDepartments(); }
-    });
-  });
-  window.addEventListener('DOMContentLoaded', () => {
-    const deptPage = document.getElementById('page-departments');
-    if(deptPage) deptObserver.observe(deptPage, { attributes: true, attributeFilter: ['class'] });
-  });
+  // loadDepartments() เรียกจาก _PAGE_INIT ใน index.html โดยตรง — ไม่ต้องใช้ Observer
 </script>

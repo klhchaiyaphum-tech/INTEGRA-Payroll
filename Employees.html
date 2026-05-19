@@ -150,14 +150,7 @@
     renderEmployeeTable(filtered);
   }
 
-  // Observer โหลดข้อมูลอัตโนมัติ
-  const empObs = new MutationObserver(m => {
-    m.forEach(mu => { if(!mu.target.classList.contains('d-none')) loadEmployees(); });
-  });
-  window.addEventListener('DOMContentLoaded', () => {
-    const el = document.getElementById('page-employees');
-    if(el) empObs.observe(el, { attributes: true, attributeFilter: ['class'] });
-  });
+  // loadEmployees() เรียกจาก _PAGE_INIT ใน index.html โดยตรง — ไม่ต้องใช้ Observer
 </script>
 
 <style>

@@ -220,14 +220,5 @@
     });
   }
 
-  // ตัวกระตุ้น (Observer) ที่หายไปใน V.19: ทำให้ข้อมูลโหลดอัตโนมัติเมื่อกดเมนู
-  const siObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (!mutation.target.classList.contains('d-none')) { loadSalaryItemTypes(); }
-    });
-  });
-  window.addEventListener('DOMContentLoaded', () => {
-    const page = document.getElementById('page-salary-items');
-    if(page) siObserver.observe(page, { attributes: true, attributeFilter: ['class'] });
-  });
+  // loadSalaryItemTypes() เรียกจาก _PAGE_INIT ใน index.html โดยตรง — ไม่ต้องใช้ Observer
 </script>

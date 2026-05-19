@@ -95,8 +95,21 @@ function _makeGasRun() {
                fnName === 'getAttendanceList'  || fnName === 'getSalaryRecords') {
       ok([]);
 
+    } else if (fnName === 'getAttendanceCalendarData') {
+      // Attendance timesheet grid — return empty structure
+      ok({ header: [], employees: [] });
+
+    } else if (fnName === 'getSalaryHistoryData' || fnName === 'getRecordDetailsData') {
+      // Salary history / record details — return empty array
+      ok([]);
+
+    } else if (fnName === 'calculateMonthlySalary') {
+      ok({ data: [], exportConfig: [], alreadyPaid: false });
+
     } else {
-      fail('[offline] "' + fnName + '" ต้องการ GAS — deploy แล้วลองใหม่');
+      // Unknown function: call failure handler (or swallow if none set)
+      if (_err) _err(new Error('[offline] "' + fnName + '" ต้องการ GAS — deploy แล้วลองใหม่'));
+      else console.warn('[api-bridge offline] unhandled:', fnName);
     }
   }
 

@@ -89,37 +89,28 @@
     <div class="card-body p-4">
       <h5 class="fw-bold mb-3"><i class="bi bi-calendar-event text-primary me-2"></i>ปฏิทินวันหยุดและกิจกรรม</h5>
       <div id="holiday-calendar-view" class="p-3 bg-light rounded text-center">
-        <p class="text-muted">กำลังโหลดข้อมูลวันหยุดจากระบบ...</p>
+        <p class="text-muted small"><i class="bi bi-calendar3 me-1"></i>ข้อมูลวันหยุดจะแสดงเมื่อเชื่อมต่อ GAS</p>
       </div>
     </div>
   </div>
 </div>
 <script>
-  // ฟังก์ชันดึงตัวเลขมาเติมในช่อง Bubbles
+  // ฟังก์ชันดึงตัวเลขมาเติมในช่อง Bubbles (เรียกจาก _PAGE_INIT ใน index.html)
   function updateDashboard() {
-    google.script.run.withSuccessHandler(function(stats) {
-      // เติมตัวเลขพนักงานทั้งหมด
-      const totalEl = document.getElementById('dash-total-emp');
-      if(totalEl) totalEl.innerText = stats.totalActive;
-      
-      // เติมตัวเลขอื่นๆ
-      if(document.getElementById('dash-turnover')) document.getElementById('dash-turnover').innerText = stats.turnover;
-      if(document.getElementById('dash-approvers')) document.getElementById('dash-approvers').innerText = stats.approvers;
-      if(document.getElementById('count-leave-pending')) document.getElementById('count-leave-pending').innerText = stats.pendingLeave;
-    }).getDashboardStats();
+    google.script.run
+      .withSuccessHandler(function(stats) {
+        if (!stats) return;
+        var set = function(id, val) { var el = document.getElementById(id); if(el && val !== undefined) el.innerText = val; };
+        set('dash-total-emp',   stats.totalActive  || 0);
+        set('dash-turnover',    stats.turnover != null ? stats.turnover : '—');
+        set('dash-approvers',   stats.approvers    || 0);
+        set('dash-suspicious-ot', stats.suspiciousOt || 0);
+        set('count-ot-pending', stats.pendingOt    || 0);
+        set('count-leave-pending', stats.pendingLeave || 0);
+        set('count-absent',     stats.absentCount  || 0);
+        set('count-late',       stats.lateToday    || 0);
+      })
+      .withFailureHandler(function(err) { console.warn('dashboard stats error', err); })
+      .getDashboardStats({});
   }
-
-  // ใช้ MutationObserver ตรวจสอบว่าถ้าหน้า Dashboard ถูกเปิด (เลิก d-none) ให้โหลดข้อมูลทันที
-  const dashboardObserver = new MutationObserver((mutations) => {
-    mutations.forEach((mutation) => {
-      if (!mutation.target.classList.contains('d-none')) {
-        updateDashboard();
-      }
-    });
-  });
-
-  window.addEventListener('load', () => {
-    const dashPage = document.getElementById('page-dashboard');
-    if(dashPage) dashboardObserver.observe(dashPage, { attributes: true, attributeFilter: ['class'] });
-  });
 </script>

@@ -105,11 +105,22 @@
     document.getElementById('hist-loading').classList.remove('d-none');
     document.getElementById('hist-summary-wrapper').classList.add('d-none');
     
-    google.script.run.withSuccessHandler(function(res) {
+    function _histDone() {
       document.getElementById('hist-loading').classList.add('d-none');
       document.getElementById('hist-summary-wrapper').classList.remove('d-none');
-      renderHistoryCards(res);
-    }).getSalaryHistoryData(histYear, histMonth);
+    }
+    google.script.run
+      .withFailureHandler(function() {
+        _histDone();
+        document.getElementById('salary-history-container').innerHTML =
+          '<div class="col-12 text-center py-5 text-muted small">' +
+          '<i class="bi bi-wifi-off me-2"></i>ยังไม่ได้เชื่อมต่อ GAS — กด Deploy ก่อนใช้งาน</div>';
+      })
+      .withSuccessHandler(function(res) {
+        _histDone();
+        renderHistoryCards(res || []);
+      })
+      .getSalaryHistoryData(histYear, histMonth);
   }
 
   // 4. สร้างการ์ดประวัติ (ดึงข้อมูลตัวอย่าง REC-20260426 ในรูปเป๊ะ)

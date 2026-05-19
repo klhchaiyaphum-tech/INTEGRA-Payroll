@@ -86,6 +86,16 @@
     else area.classList.add('d-none');
   });
 
+  // โหลดข้อมูลเมื่อเปิดหน้า (เรียกจาก _PAGE_INIT)
+  function loadDeductionTypes() {
+    var body = document.getElementById('deduction-list-body');
+    if (body) body.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-muted"><span class="spinner-border spinner-border-sm text-primary me-2"></span>กำลังโหลด...</td></tr>';
+    google.script.run
+      .withSuccessHandler(function(data) { renderDeductionList(data || []); })
+      .withFailureHandler(function() { renderDeductionList([]); })
+      .getDeductionTypes({});
+  }
+
   // ฟังก์ชันดึงข้อมูลมาแสดง (เรียกจาก Index.html)
   function renderDeductionList(data) {
     const body = document.getElementById('deduction-list-body');

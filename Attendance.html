@@ -160,12 +160,25 @@
     document.getElementById('atten-loading').classList.remove('d-none');
     document.getElementById('atten-table-wrapper').classList.add('d-none');
     
-    google.script.run.withSuccessHandler(function(res) {
+    function _attenDone() {
       document.getElementById('atten-loading').classList.add('d-none');
       document.getElementById('atten-table-wrapper').classList.remove('d-none');
-      attenCalendarCache = res.employees; // เก็บเข้า Cache
-      renderAttendanceTable(res);
-    }).getAttendanceCalendarData(currentAttenMonth, currentAttenYear);
+    }
+    google.script.run
+      .withFailureHandler(function(err) {
+        _attenDone();
+        document.getElementById('atten-header-days').innerHTML =
+          '<th class="sticky-col-name text-center">พนักงาน</th><th>ข้อมูล</th>';
+        document.getElementById('atten-calendar-body').innerHTML =
+          '<tr><td colspan="40" class="text-center py-4 text-muted small">' +
+          '<i class="bi bi-wifi-off me-1"></i>ยังไม่ได้เชื่อมต่อ GAS — กด Deploy ก่อนใช้งาน</td></tr>';
+      })
+      .withSuccessHandler(function(res) {
+        _attenDone();
+        attenCalendarCache = res.employees || [];
+        renderAttendanceTable(res);
+      })
+      .getAttendanceCalendarData(currentAttenMonth, currentAttenYear);
   }
 
   // 4. สร้างหัวตาราง (วันที่) และเนื้อหา (รายชื่อพนักงาน)
