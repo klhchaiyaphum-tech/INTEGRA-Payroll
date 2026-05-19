@@ -136,6 +136,15 @@
   font-weight: 700;
   margin-top: 8px;
 }
+
+.angle-dot {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: #dee2e6; border: 2px solid #ccc;
+  margin: 0 auto; transition: background .3s, border-color .3s;
+}
+.angle-dot.done    { background: #00c851; border-color: #00c851; }
+.angle-dot.current { background: #3c8dbc; border-color: #3c8dbc; animation: dotPulse 1s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100%{opacity:1} 50%{opacity:.5} }
 </style>
 
 <div id="reg-wrap">
@@ -180,10 +189,26 @@
       </button>
     </div>
 
-    <!-- STEP 2: Face scan -->
+    <!-- STEP 2: Face scan multi-angle -->
     <div class="step-panel" id="reg-step-2">
       <div class="step-title">ขั้นที่ 2 — สแกนใบหน้า</div>
-      <div class="step-sub">เล็งใบหน้าให้ตรงกลาง รอจนระบบตรวจพบใบหน้า</div>
+      <div class="step-sub" id="reg-angle-sub">เล็งใบหน้าให้ตรงกลาง กดถ่ายทีละมุม (3 มุม)</div>
+
+      <!-- Angle progress dots -->
+      <div style="display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:12px">
+        <div style="text-align:center">
+          <div class="angle-dot" id="adot-0"></div>
+          <div style="font-size:0.65rem;color:#888;margin-top:3px">หน้าตรง</div>
+        </div>
+        <div style="text-align:center">
+          <div class="angle-dot" id="adot-1"></div>
+          <div style="font-size:0.65rem;color:#888;margin-top:3px">หันซ้าย</div>
+        </div>
+        <div style="text-align:center">
+          <div class="angle-dot" id="adot-2"></div>
+          <div style="font-size:0.65rem;color:#888;margin-top:3px">หันขวา</div>
+        </div>
+      </div>
 
       <div class="face-frame" id="reg-face-frame">
         <div class="face-placeholder" id="reg-face-ph">
@@ -201,7 +226,7 @@
       <div class="reg-msg" id="reg-msg-2"></div>
 
       <button class="btn-primary-round" id="reg-btn-capture" onclick="reg_captureDescriptor()" disabled>
-        <i class="bi bi-person-check me-1"></i> บันทึกใบหน้า
+        <i class="bi bi-camera-fill me-1"></i> ถ่ายมุมที่ 1 — หน้าตรง
       </button>
     </div>
 
@@ -240,12 +265,19 @@
 <script>
 (function(){
   var _regEmpId = '', _regName = '';
-  var _descriptor = null;
-  var _photoB64   = null;
+  var _descriptors = [];   // เก็บทุกมุม [{angle, descriptor, photo}]
+  var _photoB64    = null;
   var _detectionLoop = null;
   var _faceApiReady  = false;
   var _videoStream   = null;
   var _modelLoading  = false;
+  var _angleIdx      = 0;
+  var _ANGLES = ['หน้าตรง', 'หันซ้ายเล็กน้อย', 'หันขวาเล็กน้อย'];
+  var _CDNS   = [
+    'https://unpkg.com/face-api.js@0.22.2',
+    'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2'
+  ];
+  var _cdnIdx = 0;
 
   // ── Helpers ─────────────────────────────────────────────────
   function setMsg(step, txt, cls) {
@@ -338,28 +370,33 @@
     if (!_modelLoading && !_faceApiReady) _startLoadModels();
   };
 
-  // ── Load face-api.js + models ─────────────────────────────────
+  // ── Load face-api.js + models (CDN fallback chain) ────────────
   function _startLoadModels() {
     if (_modelLoading || _faceApiReady) return;
     _modelLoading = true;
-    if (!window.faceapi) {
-      var s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js';
-      s.onload  = function() { _loadWeights(); };
-      s.onerror = function() {
-        _modelLoading = false;
-        setModelBar(true, '⚠️ โหลด face-api.js ไม่สำเร็จ — จะบันทึกรูปแทน');
-        setTimeout(function(){ _enableCaptureAnyway(); }, 1000);
-      };
-      document.head.appendChild(s);
-    } else {
-      _loadWeights();
+    _tryLoadScript();
+  }
+
+  function _tryLoadScript() {
+    if (_cdnIdx >= _CDNS.length) {
+      _modelLoading = false;
+      setModelBar(true, '⚠️ โหลดโมเดลไม่สำเร็จ (ไม่มีอินเทอร์เน็ต) — จะบันทึกรูปแทน');
+      setTimeout(_enableCaptureAnyway, 800);
+      return;
     }
+    if (window.faceapi) { _loadWeights(); return; }
+    var cdn = _CDNS[_cdnIdx];
+    setModelBar(true, 'กำลังโหลด face-api.js (CDN ' + (_cdnIdx+1) + ')...');
+    var s = document.createElement('script');
+    s.src = cdn + '/dist/face-api.min.js';
+    s.onload  = function() { _loadWeights(); };
+    s.onerror = function() { _cdnIdx++; _tryLoadScript(); };
+    document.head.appendChild(s);
   }
 
   function _loadWeights() {
-    var BASE = 'https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/weights';
-    setModelBar(true, 'กำลังโหลดโมเดล AI (ครั้งแรกอาจช้า 10-30 วิ)...');
+    var BASE = _CDNS[_cdnIdx] + '/weights';
+    setModelBar(true, 'กำลังโหลดโมเดล AI... (อาจใช้เวลา 15-30 วิ)');
     Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(BASE),
       faceapi.nets.faceLandmark68TinyNet.loadFromUri(BASE),
@@ -368,27 +405,49 @@
       _faceApiReady = true;
       _modelLoading = false;
       setModelBar(false);
-      setDetect('โมเดล AI พร้อม ✅ — เล็งใบหน้าตรงกลาง');
-      _enableCapture(true);
+      setDetect('โมเดล AI พร้อม ✅');
+      _updateAngleUI();
       _startDetectionLoop();
-    }).catch(function(e) {
-      _modelLoading = false;
-      setModelBar(true, '⚠️ โมเดลโหลดไม่สำเร็จ — จะบันทึกรูปโดยไม่วิเคราะห์ใบหน้า');
-      setTimeout(function(){ _enableCaptureAnyway(); }, 1000);
+    }).catch(function() {
+      // Try next CDN for weights
+      _cdnIdx++;
+      if (_cdnIdx < _CDNS.length) {
+        _loadWeights();
+      } else {
+        _modelLoading = false;
+        setModelBar(true, '⚠️ โหลดโมเดลไม่สำเร็จ — จะบันทึกรูปโดยไม่วิเคราะห์ใบหน้า');
+        setTimeout(_enableCaptureAnyway, 800);
+      }
     });
   }
 
-  function _enableCapture(withAI) {
+  function _updateAngleUI() {
+    // Update dots
+    for (var i = 0; i < 3; i++) {
+      var d = document.getElementById('adot-' + i);
+      if (!d) continue;
+      d.className = 'angle-dot' + (i < _angleIdx ? ' done' : i === _angleIdx ? ' current' : '');
+    }
+    // Update button label
     var btn = document.getElementById('reg-btn-capture');
-    if (btn) {
+    if (btn && _angleIdx < _ANGLES.length) {
       btn.disabled = false;
-      btn.textContent = withAI ? '  บันทึกใบหน้า' : '  ถ่ายและบันทึก';
-      btn.innerHTML = '<i class="bi bi-person-check me-1"></i>' + btn.textContent;
+      btn.innerHTML = '<i class="bi bi-camera-fill me-1"></i> ถ่ายมุมที่ ' + (_angleIdx+1) + ' — ' + _ANGLES[_angleIdx];
+    }
+    // Update sub text
+    var sub = document.getElementById('reg-angle-sub');
+    if (sub) sub.textContent = 'มุมที่ ' + (_angleIdx+1) + '/' + _ANGLES.length + ' — ' + _ANGLES[_angleIdx];
+    setDetect(_faceApiReady ? 'โมเดล AI พร้อม ✅ — เล็งใบหน้าให้ตรง แล้วกดถ่าย' : '');
+  }
+
+  function _enableCapture(withAI) {
+    _updateAngleUI();
+    if (!withAI) {
+      var btn = document.getElementById('reg-btn-capture');
+      if (btn) { btn.disabled = false; btn.innerHTML = '<i class="bi bi-camera-fill me-1"></i> ถ่ายและบันทึก (ไม่มี AI)'; }
     }
   }
-  function _enableCaptureAnyway() {
-    _enableCapture(false);
-  }
+  function _enableCaptureAnyway() { _enableCapture(false); }
 
   // ── Open camera ───────────────────────────────────────────────
   window.reg_openCamera = function() {
@@ -432,54 +491,91 @@
     }, 800);
   }
 
-  // ── Capture descriptor ────────────────────────────────────────
+  // ── Capture one angle ─────────────────────────────────────────
   window.reg_captureDescriptor = function() {
     var video  = document.getElementById('reg-video');
     var canvas = document.getElementById('reg-canvas');
     if (!canvas) return;
 
-    // Always capture photo
+    var btn = document.getElementById('reg-btn-capture');
+    if (btn) btn.disabled = true;
+
+    // Capture photo for this angle
+    var photo = '';
     if (video && video.readyState >= 2) {
       canvas.width  = video.videoWidth  || 320;
       canvas.height = video.videoHeight || 320;
       canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-      _photoB64 = canvas.toDataURL('image/jpeg', 0.75);
+      photo = canvas.toDataURL('image/jpeg', 0.75);
+      if (_angleIdx === 0) _photoB64 = photo; // keep first photo as profile
     }
 
     if (!_faceApiReady || !window.faceapi || !video || video.style.display === 'none') {
-      // No AI — save photo only
-      _stopCam();
-      if (_photoB64 && canvas) { canvas.style.display = 'block'; }
-      setMsg(2,'✅ บันทึกรูปสำเร็จ (ไม่มีโมเดล AI)','ok');
-      setDetect('');
-      document.getElementById('reg-face-frame').classList.add('ok');
-      setTimeout(function(){ showStep(3); }, 1000);
+      // No AI — store photo only, skip descriptor
+      _descriptors.push({ angle: _ANGLES[_angleIdx] || 'unknown', descriptor: null, photo: photo });
+      _advanceAngle(photo, null);
       return;
     }
 
-    setMsg(2,'กำลังวิเคราะห์ใบหน้า...','');
+    setMsg(2, 'กำลังวิเคราะห์ใบหน้า มุม ' + _ANGLES[_angleIdx] + '...', '');
     faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks(true)
       .withFaceDescriptor()
       .then(function(result) {
         if (!result || !result.descriptor) {
-          setMsg(2,'❌ ไม่พบใบหน้าชัดเจน — ปรับแสง/มุมกล้อง แล้วลองอีกครั้ง','err');
+          setMsg(2, '❌ ไม่พบใบหน้า — ปรับมุมกล้องแล้วลองอีกครั้ง', 'err');
+          if (btn) btn.disabled = false;
           return;
         }
-        _descriptor = Array.from(result.descriptor);
-        _stopCam();
-        if (canvas) canvas.style.display = 'block';
-        document.getElementById('reg-face-frame').classList.add('ok');
-        if (_detectionLoop) { clearInterval(_detectionLoop); _detectionLoop = null; }
-        setMsg(2,'✅ สแกนใบหน้าสำเร็จ! (' + _descriptor.length + ' จุด)','ok');
-        setDetect('');
-        document.getElementById('reg-btn-capture').style.display = 'none';
-        setTimeout(function(){ showStep(3); }, 1200);
+        var desc = Array.from(result.descriptor);
+        _descriptors.push({ angle: _ANGLES[_angleIdx], descriptor: desc, photo: photo });
+        _advanceAngle(photo, desc);
       })
       .catch(function(e) {
-        setMsg(2,'เกิดข้อผิดพลาด: ' + e.message,'err');
+        setMsg(2, 'เกิดข้อผิดพลาด: ' + e.message, 'err');
+        if (btn) btn.disabled = false;
       });
   };
+
+  function _advanceAngle(photo, desc) {
+    // Mark dot done
+    var d = document.getElementById('adot-' + _angleIdx);
+    if (d) d.className = 'angle-dot done';
+
+    var doneMsg = '✅ มุม ' + _ANGLES[_angleIdx] + (desc ? ' (' + desc.length + ' จุด)' : ' (รูปเท่านั้น)');
+    setMsg(2, doneMsg, 'ok');
+
+    _angleIdx++;
+
+    if (_angleIdx < _ANGLES.length) {
+      // More angles — re-open camera after short pause
+      setTimeout(function() {
+        setMsg(2, '', '');
+        // Re-show video frame
+        var canvas = document.getElementById('reg-canvas');
+        var ph = document.getElementById('reg-face-ph');
+        if (canvas) canvas.style.display = 'none';
+        // Re-open camera for next angle
+        _stopCam();
+        _videoStream = null;
+        reg_openCamera();
+        _updateAngleUI();
+      }, 800);
+    } else {
+      // All angles done
+      _stopCam();
+      if (_detectionLoop) { clearInterval(_detectionLoop); _detectionLoop = null; }
+      var frame = document.getElementById('reg-face-frame');
+      if (frame) frame.classList.add('ok');
+      var canvas = document.getElementById('reg-canvas');
+      if (canvas && _photoB64) canvas.style.display = 'block';
+      setMsg(2, '🎉 สแกนครบ ' + _descriptors.length + ' มุมแล้ว!', 'ok');
+      setDetect('');
+      var capBtn = document.getElementById('reg-btn-capture');
+      if (capBtn) capBtn.style.display = 'none';
+      setTimeout(function() { showStep(3); }, 1200);
+    }
+  }
 
   function _stopCam() {
     if (_videoStream) { _videoStream.getTracks().forEach(function(t){ t.stop(); }); _videoStream = null; }
@@ -508,13 +604,22 @@
     var btn = evt && evt.target;
     if (btn) { btn.disabled = true; btn.textContent = 'กำลังส่ง...'; }
 
+    // Build descriptor rows for FaceID_Employees (one row per angle)
+    var descriptorRows = _descriptors.map(function(d) {
+      return {
+        angle:      d.angle,
+        descriptor: d.descriptor ? JSON.stringify(d.descriptor) : '',
+        photoB64:   d.photo || ''
+      };
+    });
+
     var payload = {
-      empId:      _regEmpId,
-      name:       _regName,
-      descriptor: _descriptor ? JSON.stringify(_descriptor) : '',
-      photoB64:   _photoB64  || '',
-      lat:        (document.getElementById('reg-lat')||{}).value || '',
-      lng:        (document.getElementById('reg-lng')||{}).value || ''
+      empId:          _regEmpId,
+      name:           _regName,
+      descriptorRows: descriptorRows,         // array ทุกมุม
+      photoB64:       _photoB64 || '',        // รูปหน้าตรง (profile)
+      lat:            (document.getElementById('reg-lat')||{}).value || '',
+      lng:            (document.getElementById('reg-lng')||{}).value || ''
     };
 
     google.script.run
@@ -540,7 +645,9 @@
 
   // ── initRegister — called by _PAGE_INIT ───────────────────────
   window.initRegister = function() {
-    _descriptor   = null;
+    _descriptors  = [];
+    _angleIdx     = 0;
+    _cdnIdx       = 0;
     _photoB64     = null;
     _stopCam();
 
@@ -552,7 +659,8 @@
     if (canvas) canvas.style.display = 'none';
     if (ph)     ph.style.display = 'flex';
     if (frame)  frame.className = 'face-frame';
-    if (btnCap) { btnCap.disabled = true; btnCap.innerHTML = '<i class="bi bi-person-check me-1"></i> บันทึกใบหน้า'; }
+    if (btnCap) { btnCap.disabled = true; btnCap.style.display = ''; btnCap.innerHTML = '<i class="bi bi-camera-fill me-1"></i> ถ่ายมุมที่ 1 — หน้าตรง'; }
+    for (var i = 0; i < 3; i++) { var adot = document.getElementById('adot-'+i); if (adot) adot.className = 'angle-dot'; }
     document.getElementById('reg-lat').value = '';
     document.getElementById('reg-lng').value = '';
     setMsg(2,'',''); setMsg(3,'กด "ดึงพิกัด GPS" เพื่อบันทึกตำแหน่งปัจจุบัน','');
