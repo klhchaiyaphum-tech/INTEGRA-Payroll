@@ -50,8 +50,9 @@
     .table-card               { border-top:3px solid var(--primary-color) !important; }
     .border-primary           { border-color:var(--primary-color) !important; }
 
-    /* ── Staff mode ── */
+    /* ── Staff mode: fullscreen, no sidebar ── */
     body.staff-mode #main-content { padding:0; }
+    body.staff-mode .sidebar      { display:none !important; }
   </style>
 </head>
 <body class="theme-1">
@@ -398,6 +399,7 @@ function loginSuccess(res) {
   document.getElementById('main-app').classList.remove('d-none');
 
   if (res.role === 'admin' || res.role === 'approver') {
+    document.body.classList.remove('staff-mode');
     document.getElementById('sidebar-admin').classList.remove('d-none');
     document.getElementById('sidebar-staff').classList.add('d-none');
     _applyPermissions(_currentUser);
@@ -422,9 +424,10 @@ function loginSuccess(res) {
 // Allow walk-up kiosk: employee uses scan without full login
 function goToEmployeePortal() {
   _currentUser = _currentUser || { username:'', name:'พนักงาน', role:'staff', empId:'', permissions:'' };
+  document.body.classList.add('staff-mode');
   document.getElementById('login-mask').classList.add('d-none');
   document.getElementById('main-app').classList.remove('d-none');
-  document.getElementById('sidebar-staff').classList.remove('d-none');
+  document.getElementById('sidebar-staff').classList.add('d-none');
   document.getElementById('sidebar-admin').classList.add('d-none');
   showPage('page-scan', null);
 }
@@ -432,6 +435,7 @@ function goToEmployeePortal() {
 function doLogout() {
   _currentUser = null;
   _loadedPages.clear();
+  document.body.classList.remove('staff-mode');
   // Reset all page fragments
   document.querySelectorAll('.page-section').forEach(p => { p.classList.remove('active'); p.innerHTML = ''; });
   document.getElementById('sidebar-admin').classList.add('d-none');

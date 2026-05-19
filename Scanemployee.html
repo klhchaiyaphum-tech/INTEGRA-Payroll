@@ -1,392 +1,570 @@
 <style>
+/* ── Scan page — consistent with employee portal gradient ── */
 #scan-wrap {
   min-height: 100vh;
-  background: #0d1117;
+  min-height: 100dvh;
+  background: linear-gradient(160deg, #1a2226 0%, #2c5f7a 55%, #1a3a4a 100%);
   display: flex;
   flex-direction: column;
   font-family: 'Sarabun', sans-serif;
   color: white;
+  overflow-x: hidden;
 }
+
+/* ── Topbar ── */
 .scan-topbar {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  background: #1a2226;
+  padding: 14px 16px;
+  background: rgba(0,0,0,0.25);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  gap: 10px;
 }
-.scan-topbar .back-btn {
-  background: none; border: none; color: white; font-size: 1.3rem; cursor: pointer; margin-right: 12px;
+.scan-back-btn {
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 10px;
+  color: white;
+  width: 38px; height: 38px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem;
+  cursor: pointer;
+  flex-shrink: 0;
 }
-.scan-topbar h5 { margin: 0; font-size: 1.1rem; font-weight: 700; }
+.scan-topbar-title {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.95);
+}
+.scan-topbar-logout {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.7);
+  font-size: 0.78rem;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* ── Clock bar ── */
 .scan-clock-bar {
   text-align: center;
-  padding: 10px;
-  background: #131920;
+  padding: 18px 16px 10px;
 }
-.scan-clock { font-size: 2.4rem; font-weight: 700; letter-spacing: 3px; }
-.scan-date  { font-size: 0.85rem; color: #8899aa; }
+.scan-clock {
+  font-size: 3rem;
+  font-weight: 700;
+  letter-spacing: 4px;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  line-height: 1;
+}
+.scan-date { font-size: 0.82rem; color: rgba(255,255,255,0.65); margin-top: 4px; }
 
+/* ── GPS bar ── */
 .gps-bar {
   display: flex; align-items: center;
-  padding: 8px 16px;
-  font-size: 0.82rem;
-  background: #1e282c;
-  gap: 8px;
+  padding: 6px 16px;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.6);
+  gap: 7px;
 }
-.gps-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.gps-dot.green  { background: #00c851; }
+.gps-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink:0; }
+.gps-dot.green  { background: #00e676; box-shadow: 0 0 6px #00e676; }
 .gps-dot.yellow { background: #ffbb33; }
-.gps-dot.red    { background: #ff4444; }
-.gps-dot.spin   { background: #888; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+.gps-dot.spin   { background: #8899aa; animation: gpspulse 1s infinite; }
+@keyframes gpspulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-.camera-area {
+/* ── Status card ── */
+.status-card {
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 18px;
+  margin: 8px 16px;
+  padding: 14px 20px;
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+}
+.status-item .label { font-size: 0.72rem; color: rgba(255,255,255,0.55); }
+.status-item .value { font-size: 1.05rem; font-weight: 700; margin-top: 2px; }
+
+/* ── Main action area ── */
+.scan-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 20px;
-  gap: 16px;
+  padding: 16px;
+  gap: 14px;
+}
+
+/* ── Camera frame ── */
+.camera-wrap {
+  position: relative;
+  width: min(240px, 62vw);
+  height: min(240px, 62vw);
 }
 .camera-frame {
-  width: 240px; height: 240px;
+  width: 100%; height: 100%;
   border-radius: 50%;
-  background: #1a2226;
-  border: 3px solid #3c8dbc;
+  background: rgba(0,0,0,0.35);
+  border: 3px solid rgba(255,255,255,0.25);
   overflow: hidden;
-  position: relative;
   display: flex; align-items: center; justify-content: center;
+  position: relative;
+  transition: border-color 0.3s;
 }
-.camera-frame video { width: 100%; height: 100%; object-fit: cover; }
-.camera-frame canvas { width: 100%; height: 100%; object-fit: cover; position: absolute; top:0; left:0; }
-.camera-placeholder { text-align: center; color: #445; }
-.camera-placeholder i { font-size: 3rem; }
+.camera-frame.active   { border-color: #3c8dbc; box-shadow: 0 0 20px rgba(60,141,188,0.5); }
+.camera-frame.ok       { border-color: #00e676; box-shadow: 0 0 20px rgba(0,230,118,0.5); }
+.camera-frame.err      { border-color: #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.4); }
+.camera-frame video    { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+.camera-frame canvas   { width:100%; height:100%; object-fit:cover; border-radius:50%; position:absolute; top:0; left:0; }
+.cam-placeholder       { text-align:center; color:rgba(255,255,255,0.3); }
+.cam-placeholder i     { font-size: 3rem; }
+.cam-placeholder small { font-size: 0.75rem; display:block; margin-top:6px; }
 
+/* ── Message ── */
 .scan-msg {
-  font-size: 0.9rem;
-  color: #8899aa;
+  font-size: 0.85rem;
+  color: rgba(255,255,255,0.65);
   text-align: center;
   min-height: 20px;
+  max-width: 300px;
+  line-height: 1.4;
 }
-.scan-msg.ok  { color: #00c851; }
-.scan-msg.err { color: #ff4444; }
+.scan-msg.ok  { color: #69f0ae; }
+.scan-msg.err { color: #ff6b6b; }
 
+/* ── Check-in / Check-out buttons ── */
 .scan-btns {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   width: 100%;
-  max-width: 380px;
+  max-width: 360px;
 }
-.btn-checkin {
-  background: linear-gradient(135deg, #00c851, #007e33);
-  color: white; border: none; border-radius: 16px;
-  padding: 18px; font-size: 1rem; font-weight: 700;
-  cursor: pointer; box-shadow: 0 4px 16px rgba(0,200,81,0.3);
+.btn-checkin, .btn-checkout {
+  border: none;
+  border-radius: 18px;
+  padding: 18px 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  transition: transform .12s, opacity .12s;
+  font-family: 'Sarabun', sans-serif;
+}
+.btn-checkin:active, .btn-checkout:active { transform: scale(0.96); }
+.btn-checkin  {
+  background: linear-gradient(135deg, #00c851, #00962d);
+  color: white;
+  box-shadow: 0 6px 20px rgba(0,200,81,0.35);
 }
 .btn-checkout {
-  background: linear-gradient(135deg, #ff6d00, #e65c00);
-  color: white; border: none; border-radius: 16px;
-  padding: 18px; font-size: 1rem; font-weight: 700;
-  cursor: pointer; box-shadow: 0 4px 16px rgba(255,109,0,0.3);
+  background: linear-gradient(135deg, #ff6d00, #d45600);
+  color: white;
+  box-shadow: 0 6px 20px rgba(255,109,0,0.35);
 }
-.btn-camera {
-  background: #1e282c; color: #8899aa; border: 1px solid #2a3a42;
-  border-radius: 12px; padding: 10px 20px; font-size: 0.85rem;
-  cursor: pointer; width: 100%; max-width: 380px;
+.btn-checkin .icon, .btn-checkout .icon {
+  font-size: 1.8rem;
+  line-height: 1;
 }
+.btn-checkin:disabled, .btn-checkout:disabled {
+  opacity: 0.5; cursor: not-allowed;
+}
+
+/* ── Result card ── */
 .result-card {
-  background: #1e282c;
-  border-radius: 16px;
-  padding: 16px 24px;
+  background: rgba(0,200,81,0.15);
+  border: 1px solid rgba(0,200,81,0.35);
+  border-radius: 18px;
+  padding: 18px 24px;
   text-align: center;
   width: 100%;
-  max-width: 380px;
+  max-width: 340px;
   display: none;
 }
-.result-card.show { display: block; }
-.result-time { font-size: 2rem; font-weight: 700; color: #00c851; }
-.result-name { font-size: 1rem; color: #ccc; }
+.result-card.show  { display: block; }
+.result-card.out   { background: rgba(255,109,0,0.15); border-color: rgba(255,109,0,0.35); }
+.result-time       { font-size: 2.4rem; font-weight: 700; }
+.result-card.show .result-time { color: #69f0ae; }
+.result-card.out   .result-time { color: #ffab40; }
+.result-label      { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 4px; }
+
+/* ── Retry button ── */
+.btn-retry {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 12px;
+  color: white;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: 'Sarabun', sans-serif;
+}
 </style>
 
 <div id="scan-wrap">
-  <!-- Top bar -->
+
+  <!-- Topbar -->
   <div class="scan-topbar">
-    <button class="back-btn" onclick="if(typeof showPage==='function') showPage('page-employee-portal',null)">
-      <i class="bi bi-arrow-left"></i>
+    <button class="scan-back-btn" onclick="goBackToPortal()" title="กลับหน้าหลัก">
+      <i class="bi bi-house-heart-fill"></i>
     </button>
-    <h5>สแกนลงเวลา</h5>
+    <div class="scan-topbar-title">
+      <i class="bi bi-camera-fill me-1 opacity-75"></i> บันทึกเวลาทำงาน
+    </div>
+    <button class="scan-topbar-logout" onclick="doLogout()">
+      <i class="bi bi-box-arrow-left me-1"></i>ออกจากระบบ
+    </button>
   </div>
 
   <!-- Clock -->
   <div class="scan-clock-bar">
-    <div class="scan-clock" id="scan-clock">--:--:--</div>
+    <div class="scan-clock" id="scan-clock">--:--</div>
     <div class="scan-date"  id="scan-date"></div>
   </div>
 
-  <!-- GPS bar -->
+  <!-- GPS -->
   <div class="gps-bar">
     <div class="gps-dot spin" id="gps-dot"></div>
     <span id="gps-text">กำลังรอ GPS...</span>
   </div>
 
-  <!-- Camera + buttons -->
-  <div class="camera-area">
-    <div class="camera-frame" id="camera-frame">
-      <div class="camera-placeholder" id="cam-placeholder">
-        <i class="bi bi-camera"></i>
-        <div class="mt-2" style="font-size:0.8rem">กดเปิดกล้อง</div>
+  <!-- Today status -->
+  <div class="status-card">
+    <div class="status-item">
+      <div class="label">เข้างาน</div>
+      <div class="value" id="sc-checkin">—</div>
+    </div>
+    <div class="status-item">
+      <div class="label">ออกงาน</div>
+      <div class="value" id="sc-checkout">—</div>
+    </div>
+    <div class="status-item">
+      <div class="label">สาย (นาที)</div>
+      <div class="value" id="sc-late">—</div>
+    </div>
+  </div>
+
+  <!-- Camera + main body -->
+  <div class="scan-body">
+
+    <!-- Camera frame -->
+    <div class="camera-wrap">
+      <div class="camera-frame" id="camera-frame">
+        <div class="cam-placeholder" id="cam-placeholder">
+          <i class="bi bi-camera"></i>
+          <small>กดเช็คอิน/เช็คเอาท์<br>เพื่อเปิดกล้อง</small>
+        </div>
+        <video id="scan-video" autoplay playsinline style="display:none"></video>
+        <canvas id="scan-canvas" style="display:none"></canvas>
       </div>
-      <video id="scan-video" autoplay playsinline style="display:none"></video>
-      <canvas id="scan-canvas" style="display:none"></canvas>
     </div>
 
-    <div class="scan-msg" id="scan-msg">กรุณาเปิดกล้องเพื่อยืนยันตัวตน</div>
+    <!-- Message -->
+    <div class="scan-msg" id="scan-msg">กดปุ่มด้านล่างเพื่อเริ่มบันทึกเวลา</div>
 
-    <button class="btn-camera" id="btn-open-cam" onclick="openCamera()">
-      <i class="bi bi-camera me-1"></i> เปิดกล้อง
-    </button>
-    <button class="btn-camera" id="btn-take-photo" onclick="takePhoto()" style="display:none;background:#3c8dbc;color:white;border-color:#3c8dbc">
-      <i class="bi bi-camera-fill me-1"></i> ถ่ายและยืนยันใบหน้า
-    </button>
+    <!-- Result card (hidden until success) -->
+    <div class="result-card" id="result-card">
+      <div class="result-time" id="result-time">--:--</div>
+      <div class="result-label" id="result-label">—</div>
+    </div>
 
-    <div class="scan-btns">
-      <button class="btn-checkin"  onclick="doScan('IN')">
-        <i class="bi bi-box-arrow-in-right d-block mb-1" style="font-size:1.4rem"></i>
+    <!-- Check-in / Check-out buttons -->
+    <div class="scan-btns" id="scan-btns">
+      <button class="btn-checkin"  id="btn-in"  onclick="startScan('IN')">
+        <span class="icon"><i class="bi bi-box-arrow-in-right"></i></span>
         เช็คอิน
       </button>
-      <button class="btn-checkout" onclick="doScan('OUT')">
-        <i class="bi bi-box-arrow-right d-block mb-1" style="font-size:1.4rem"></i>
+      <button class="btn-checkout" id="btn-out" onclick="startScan('OUT')">
+        <span class="icon"><i class="bi bi-box-arrow-right"></i></span>
         เช็คเอาท์
       </button>
     </div>
 
-    <div class="result-card" id="result-card">
-      <div class="result-name" id="result-name"></div>
-      <div class="result-time" id="result-time"></div>
-      <div class="result-name" id="result-status" style="margin-top:4px;color:#8899aa"></div>
-    </div>
+    <!-- Retry button (shown after success) -->
+    <button class="btn-retry" id="btn-retry" style="display:none" onclick="resetScan()">
+      <i class="bi bi-arrow-counterclockwise me-1"></i>สแกนอีกครั้ง
+    </button>
+
   </div>
 </div>
 
 <script>
 (function(){
-  // ── state
-  var _gpsLat = null, _gpsLng = null, _gpsReady = false;
-  var _photoB64 = null, _faceVerified = false;
-  var _scanEmpId = '', _scanName = '';
+  var _gpsLat = null, _gpsLng = null;
+  var _photoB64 = null;
+  var _faceVerified = false;
+  var _pendingType = null;   // 'IN' | 'OUT'
+  var _stream = null;
 
-  // ── clock
+  // ── Clock ──────────────────────────────────────────────────
   function _tick() {
     var el = document.getElementById('scan-clock');
-    if (el) el.textContent = new Date().toLocaleTimeString('th-TH',{hour12:false});
+    if (el) {
+      var t = new Date().toLocaleTimeString('th-TH',{hour12:false});
+      el.textContent = t.slice(0,5); // HH:MM only
+    }
   }
   _tick(); setInterval(_tick, 1000);
-
   var dateEl = document.getElementById('scan-date');
   if (dateEl) {
-    var d = new Date();
-    dateEl.textContent = d.toLocaleDateString('th-TH',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    dateEl.textContent = new Date().toLocaleDateString('th-TH',
+      {weekday:'long', year:'numeric', month:'long', day:'numeric'});
   }
 
-  // ── GPS bar helper
-  function setGpsBar(state, text) {
+  // ── GPS ─────────────────────────────────────────────────────
+  function _setGps(state, text) {
     var dot  = document.getElementById('gps-dot');
     var span = document.getElementById('gps-text');
-    if (dot) { dot.className = 'gps-dot ' + (state||'spin'); }
-    if (span) span.textContent = text || '';
+    if (dot)  dot.className  = 'gps-dot ' + (state||'spin');
+    if (span) span.textContent = text||'';
   }
 
-  // ── GPS
   function startGPS() {
-    if (!navigator.geolocation) {
-      setGpsBar('yellow','GPS ไม่รองรับในเบราว์เซอร์นี้');
-      return;
-    }
-    setGpsBar('spin','กำลังรอ GPS...');
+    if (!navigator.geolocation) { _setGps('yellow','GPS ไม่รองรับ'); return; }
     navigator.geolocation.getCurrentPosition(
       function(pos) {
         _gpsLat = pos.coords.latitude;
         _gpsLng = pos.coords.longitude;
-        _gpsReady = true;
-        setGpsBar('green','GPS พร้อม — ' + _gpsLat.toFixed(5) + ', ' + _gpsLng.toFixed(5));
+        _setGps('green', _gpsLat.toFixed(4)+', '+_gpsLng.toFixed(4));
       },
       function(err) {
-        var msg = 'GPS ไม่พร้อม';
-        if (err.code === 1) msg = 'ถูกปฏิเสธสิทธิ์ GPS';
-        else if (err.code === 2) msg = 'ไม่พบสัญญาณ GPS';
-        else if (err.code === 3) msg = 'GPS หมดเวลา';
-        setGpsBar('yellow', msg + ' (สามารถเช็คอินต่อได้)');
-        _gpsReady = false;
+        var m = err.code===1 ? 'ปฏิเสธสิทธิ์ GPS' : err.code===2 ? 'ไม่พบสัญญาณ' : 'GPS timeout';
+        _setGps('yellow', m+' (ยังเช็คอินได้)');
       },
-      { timeout: 15000, maximumAge: 30000 }
+      { timeout:15000, maximumAge:30000 }
     );
   }
 
-  // ── camera
-  window.openCamera = function() {
-    var video = document.getElementById('scan-video');
-    var placeholder = document.getElementById('cam-placeholder');
-    var btnOpen  = document.getElementById('btn-open-cam');
-    var btnPhoto = document.getElementById('btn-take-photo');
-    setScanMsg('กำลังเปิดกล้อง...','');
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      setScanMsg('กล้องไม่พร้อม (HTTP หรือไม่รองรับ) — ข้ามยืนยันใบหน้า','err');
-      _faceVerified = true; // allow scan without face on HTTP
-      btnOpen.style.display = 'none';
-      return;
-    }
-
-    navigator.mediaDevices.getUserMedia({ video: { facingMode:'user' } })
-      .then(function(stream) {
-        video.srcObject = stream;
-        video.style.display = 'block';
-        if (placeholder) placeholder.style.display = 'none';
-        if (btnOpen)  btnOpen.style.display  = 'none';
-        if (btnPhoto) btnPhoto.style.display = 'block';
-        setScanMsg('เล็งใบหน้าให้ตรงกลางวงกลม แล้วกดถ่าย','');
-      })
-      .catch(function(e) {
-        setScanMsg('เปิดกล้องไม่ได้: ' + e.message + ' — กรุณายืนยันตัวตนวิธีอื่น','err');
-        // on HTTP camera failure: call verifyFace with no photo to get empId from GAS
-        verifyFace(null);
-      });
-  };
-
-  window.takePhoto = function() {
-    var video  = document.getElementById('scan-video');
-    var canvas = document.getElementById('scan-canvas');
-    if (!video || !canvas) return;
-    canvas.width  = video.videoWidth  || 240;
-    canvas.height = video.videoHeight || 240;
-    var ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    _photoB64 = canvas.toDataURL('image/jpeg', 0.7);
-
-    // Stop camera stream
-    var stream = video.srcObject;
-    if (stream) stream.getTracks().forEach(function(t){ t.stop(); });
-    video.style.display = 'none';
-    canvas.style.display = 'block';
-
-    setScanMsg('กำลังยืนยันใบหน้า...','');
-    verifyFace(_photoB64);
-  };
-
-  function verifyFace(photoB64) {
-    var u = window._currentUser || {};
-    var payload = {
-      empId:   u.empId || '',
-      name:    u.name  || '',
-      photoB64: photoB64 || ''
-    };
-    google.script.run
-      .withSuccessHandler(function(res) {
-        if (res && res.matched) {
-          _faceVerified = true;
-          _scanEmpId = res.empId || u.empId || '';
-          _scanName  = res.name  || u.name  || '';
-          if (window._currentUser) {
-            window._currentUser.empId = _scanEmpId;
-            window._currentUser.name  = _scanName;
-          }
-          setScanMsg('✅ ยืนยันตัวตนสำเร็จ: ' + _scanName, 'ok');
-          var btnPhoto = document.getElementById('btn-take-photo');
-          if (btnPhoto) btnPhoto.style.display = 'none';
-        } else {
-          setScanMsg('❌ ไม่พบใบหน้าในระบบ — ลองใหม่หรือลงทะเบียนก่อน','err');
-        }
-      })
-      .withFailureHandler(function(err) {
-        // offline fallback: use current user
-        _faceVerified = true;
-        _scanEmpId = u.empId || 'WALK001';
-        _scanName  = u.name  || 'พนักงาน';
-        setScanMsg('⚠️ ยืนยันแบบออฟไลน์: ' + _scanName,'ok');
-      })
-      .verifyFaceAndSave(payload);
-  }
-
-  function setScanMsg(txt, cls) {
+  // ── Message ─────────────────────────────────────────────────
+  function _msg(txt, cls) {
     var el = document.getElementById('scan-msg');
     if (!el) return;
     el.textContent = txt;
     el.className = 'scan-msg ' + (cls||'');
   }
 
-  // ── main scan action
-  window.doScan = function(type) {
-    if (!_faceVerified) {
-      setScanMsg('กรุณาเปิดกล้องและยืนยันใบหน้าก่อน','err');
+  function _setFrame(state) {
+    var f = document.getElementById('camera-frame');
+    if (f) f.className = 'camera-frame ' + (state||'');
+  }
+
+  // ── Camera ──────────────────────────────────────────────────
+  function _openCamera(onReady, onFail) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      onFail('กล้องไม่รองรับ (ต้องใช้ HTTPS)');
       return;
     }
-    var empId = _scanEmpId || (window._currentUser && window._currentUser.empId) || '';
-    var name  = _scanName  || (window._currentUser && window._currentUser.name)  || '';
-    if (!empId) {
-      setScanMsg('ไม่พบรหัสพนักงาน — กรุณาเข้าสู่ระบบใหม่','err');
-      return;
-    }
-
-    var now = new Date();
-    var payload = {
-      empId:   empId,
-      name:    name,
-      type:    type,
-      date:    now.toLocaleDateString('th-TH'),
-      time:    now.toLocaleTimeString('th-TH',{hour12:false}),
-      lat:     _gpsLat,
-      lng:     _gpsLng,
-      mapLink: (_gpsLat && _gpsLng) ? 'https://maps.google.com/?q=' + _gpsLat + ',' + _gpsLng : '',
-      photoB64: _photoB64 || ''
-    };
-
-    setScanMsg('กำลังบันทึก...','');
-    google.script.run
-      .withSuccessHandler(function(res) {
-        var card   = document.getElementById('result-card');
-        var rTime  = document.getElementById('result-time');
-        var rName  = document.getElementById('result-name');
-        var rStatus= document.getElementById('result-status');
-        if (card) card.classList.add('show');
-        if (rTime)   rTime.textContent   = res.time || now.toLocaleTimeString('th-TH',{hour12:false});
-        if (rName)   rName.textContent   = name;
-        if (rStatus) rStatus.textContent = (type==='IN' ? '✅ เช็คอินสำเร็จ' : '🔚 เช็คเอาท์สำเร็จ');
-        setScanMsg(res.message || 'บันทึกสำเร็จ','ok');
+    navigator.mediaDevices.getUserMedia({ video: { facingMode:'user', width:480, height:480 } })
+      .then(function(stream) {
+        _stream = stream;
+        var video = document.getElementById('scan-video');
+        var ph    = document.getElementById('cam-placeholder');
+        if (video) { video.srcObject = stream; video.style.display = 'block'; }
+        if (ph)    ph.style.display = 'none';
+        _setFrame('active');
+        if (onReady) onReady();
       })
-      .withFailureHandler(function(err) {
-        setScanMsg('เกิดข้อผิดพลาด: ' + (err.message||err),'err');
-      })
-      .saveAttendance(payload);
-  };
+      .catch(function(e) {
+        if (onFail) onFail(e.message || 'เปิดกล้องไม่ได้');
+      });
+  }
 
-  // expose initScan for _PAGE_INIT
-  window.initScan = function() {
-    // reset state when page re-opens
-    _gpsLat = null; _gpsLng = null; _gpsReady = false;
-    _photoB64 = null; _faceVerified = false;
-    _scanEmpId = ''; _scanName = '';
+  function _stopCamera() {
+    if (_stream) { _stream.getTracks().forEach(function(t){ t.stop(); }); _stream = null; }
+    var video = document.getElementById('scan-video');
+    if (video) { video.style.display = 'none'; video.srcObject = null; }
+  }
 
-    var u = window._currentUser || {};
-    _scanEmpId = u.empId || '';
-    _scanName  = u.name  || '';
-
+  function _takeAndVerify() {
     var video  = document.getElementById('scan-video');
     var canvas = document.getElementById('scan-canvas');
-    var ph     = document.getElementById('cam-placeholder');
-    var btnO   = document.getElementById('btn-open-cam');
-    var btnP   = document.getElementById('btn-take-photo');
-    var card   = document.getElementById('result-card');
+    if (!video || !canvas) return;
+    canvas.width  = video.videoWidth  || 320;
+    canvas.height = video.videoHeight || 320;
+    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+    _photoB64 = canvas.toDataURL('image/jpeg', 0.75);
 
-    if (video)  { video.style.display  = 'none'; video.srcObject = null; }
+    _stopCamera();
+    canvas.style.display = 'block';
+    _msg('กำลังยืนยันใบหน้า...','');
+
+    var u = window._currentUser || {};
+    google.script.run
+      .withSuccessHandler(function(res) {
+        if (res && res.matched) {
+          _faceVerified = true;
+          if (res.empId && window._currentUser) window._currentUser.empId = res.empId;
+          if (res.name  && window._currentUser) window._currentUser.name  = res.name;
+          _setFrame('ok');
+          _msg('✅ ยืนยันตัวตนสำเร็จ: '+(res.name||u.name||'พนักงาน'),'ok');
+          setTimeout(function(){ _doSave(_pendingType); }, 600);
+        } else {
+          _setFrame('err');
+          _msg('❌ ไม่พบใบหน้าในระบบ — ลองใหม่หรือลงทะเบียนก่อน','err');
+          _showRetry();
+        }
+      })
+      .withFailureHandler(function() {
+        // Offline: bypass face check
+        _faceVerified = true;
+        _setFrame('ok');
+        _msg('⚠️ โหมดออฟไลน์ — ข้ามยืนยันใบหน้า','ok');
+        setTimeout(function(){ _doSave(_pendingType); }, 500);
+      })
+      .verifyFaceAndSave({ empId: u.empId||'', name: u.name||'', photoB64: _photoB64 });
+  }
+
+  // ── Main flow: press check-in/out → open camera ─────────────
+  window.startScan = function(type) {
+    _pendingType = type;
+    _photoB64    = null;
+    _faceVerified= false;
+
+    // Disable both buttons while processing
+    var btnIn  = document.getElementById('btn-in');
+    var btnOut = document.getElementById('btn-out');
+    if (btnIn)  btnIn.disabled  = true;
+    if (btnOut) btnOut.disabled = true;
+
+    // Reset canvas
+    var canvas = document.getElementById('scan-canvas');
     if (canvas) canvas.style.display = 'none';
-    if (ph)     ph.style.display = 'flex';
-    if (btnO)   btnO.style.display  = 'block';
-    if (btnP)   btnP.style.display  = 'none';
-    if (card)   card.classList.remove('show');
+    var ph = document.getElementById('cam-placeholder');
+    if (ph) ph.style.display = 'none';
 
-    setScanMsg('กรุณาเปิดกล้องเพื่อยืนยันตัวตน','');
+    _setFrame('');
+    _msg('กำลังเปิดกล้อง...','');
+
+    _openCamera(
+      function() {
+        // Camera ready — show shutter button overlay after 1s
+        _msg('เล็งใบหน้าตรงกลางวงกลม...','');
+        setTimeout(function(){ _takeAndVerify(); }, 2000); // auto-capture after 2s
+      },
+      function(errMsg) {
+        // Camera failed — bypass on HTTPS error (user denied)
+        _msg('⚠️ '+errMsg+' — เช็คอินโดยไม่ใช้กล้อง','err');
+        _faceVerified = true;
+        setTimeout(function(){ _doSave(type); }, 800);
+      }
+    );
+  };
+
+  // ── Save attendance ──────────────────────────────────────────
+  function _doSave(type) {
+    var u = window._currentUser || {};
+    var empId = u.empId || '';
+    var name  = u.name  || 'พนักงาน';
+
+    _msg('กำลังบันทึก...','');
+
+    var now = new Date();
+    google.script.run
+      .withSuccessHandler(function(res) {
+        _showResult(type, res.time || now.toLocaleTimeString('th-TH',{hour12:false}).slice(0,5), name);
+        // Refresh today status
+        _loadTodayStatus();
+      })
+      .withFailureHandler(function(err) {
+        _setFrame('err');
+        _msg('❌ บันทึกไม่สำเร็จ: '+(err&&err.message?err.message:'ไม่ทราบสาเหตุ'),'err');
+        _showRetry();
+      })
+      .saveAttendance({
+        empId:   empId,
+        name:    name,
+        type:    type,
+        date:    now.toLocaleDateString('th-TH'),
+        time:    now.toLocaleTimeString('th-TH',{hour12:false}),
+        lat:     _gpsLat, lng: _gpsLng,
+        mapLink: (_gpsLat&&_gpsLng) ? 'https://maps.google.com/?q='+_gpsLat+','+_gpsLng : '',
+        photoB64: _photoB64||''
+      });
+  }
+
+  function _showResult(type, timeStr, name) {
+    var card  = document.getElementById('result-card');
+    var rTime = document.getElementById('result-time');
+    var rLbl  = document.getElementById('result-label');
+    var btns  = document.getElementById('scan-btns');
+
+    if (card)  { card.className = 'result-card show'+(type==='OUT'?' out':''); }
+    if (rTime) rTime.textContent = timeStr;
+    if (rLbl)  rLbl.textContent  = (type==='IN'?'✅ เช็คอินสำเร็จ':'🔚 เช็คเอาท์สำเร็จ')+' — '+name;
+    if (btns)  btns.style.display = 'none';
+
+    _msg('บันทึกเรียบร้อย','ok');
+    _showRetry();
+  }
+
+  function _showRetry() {
+    var btn = document.getElementById('btn-retry');
+    if (btn) btn.style.display = 'block';
+  }
+
+  window.resetScan = function() {
+    _stopCamera();
+    _pendingType  = null;
+    _photoB64     = null;
+    _faceVerified = false;
+
+    var ph     = document.getElementById('cam-placeholder');
+    var canvas = document.getElementById('scan-canvas');
+    var card   = document.getElementById('result-card');
+    var btns   = document.getElementById('scan-btns');
+    var retry  = document.getElementById('btn-retry');
+    var btnIn  = document.getElementById('btn-in');
+    var btnOut = document.getElementById('btn-out');
+
+    if (ph)     { ph.style.display = 'flex'; }
+    if (canvas) canvas.style.display = 'none';
+    if (card)   card.className = 'result-card';
+    if (btns)   btns.style.display = 'grid';
+    if (retry)  retry.style.display = 'none';
+    if (btnIn)  btnIn.disabled  = false;
+    if (btnOut) btnOut.disabled = false;
+    _setFrame('');
+    _msg('กดปุ่มด้านล่างเพื่อเริ่มบันทึกเวลา','');
+  };
+
+  // ── Today status bar ─────────────────────────────────────────
+  function _loadTodayStatus() {
+    var u = window._currentUser || {};
+    if (!u.empId) return;
+    google.script.run
+      .withSuccessHandler(function(data) {
+        if (!data) return;
+        var ci = document.getElementById('sc-checkin');
+        var co = document.getElementById('sc-checkout');
+        var la = document.getElementById('sc-late');
+        if (ci) ci.textContent = data.timeIn  || '—';
+        if (co) co.textContent = data.timeOut || '—';
+        if (la) la.textContent = (data.lateMin != null) ? data.lateMin : '—';
+      })
+      .withFailureHandler(function(){})
+      .getEmployeePortalData({ empId: u.empId });
+  }
+
+  // ── Back to portal ───────────────────────────────────────────
+  window.goBackToPortal = function() {
+    _stopCamera();
+    if (typeof showPage === 'function') showPage('page-employee-portal', null);
+  };
+
+  // ── initScan (called by _PAGE_INIT) ─────────────────────────
+  window.initScan = function() {
+    window.resetScan();
     startGPS();
+    _loadTodayStatus();
   };
 
   // Auto-start
