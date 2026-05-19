@@ -352,13 +352,20 @@ function loginSuccess(res) {
     document.getElementById('sidebar-staff').classList.add('d-none');
     _applyPermissions(_currentUser);
     showPage('page-dashboard', document.querySelector('#sidebar-admin .sidebar-link[data-perm="dashboard"]'));
+    // Preload หน้าที่ใช้บ่อย เบื้องหลัง (ไม่รบกวน UI)
+    setTimeout(function() {
+      ['page-employees','page-attendance','page-payroll','page-config'].forEach(function(p) {
+        _loadFragment(p, null);
+      });
+    }, 1500);
   } else {
-    // Staff: show staff sidebar (or no sidebar for pure mobile)
     document.getElementById('sidebar-staff').classList.remove('d-none');
     document.getElementById('sidebar-admin').classList.add('d-none');
     const nameEl = document.getElementById('staff-name-display');
     if (nameEl) nameEl.textContent = _currentUser.name;
     showPage('page-employee-portal', document.querySelector('#sidebar-staff .sidebar-link'));
+    // Preload หน้าสแกน
+    setTimeout(function() { _loadFragment('page-scan', null); }, 800);
   }
 }
 

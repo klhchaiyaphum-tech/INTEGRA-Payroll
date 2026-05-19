@@ -14,11 +14,16 @@ function _makeGasRun() {
   // ─── เรียก GAS จริง หรือ fallback ──────────────────────────
   async function _call(fnName, payload) {
     try {
+      // Timeout 6 วินาที — ถ้า GAS ช้าให้ใช้ fallback ทันที
+      var ctrl = new AbortController();
+      var timer = setTimeout(function(){ ctrl.abort(); }, 6000);
       var resp = await fetch(GAS_API_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'text/plain' },
-        body:    JSON.stringify({ action: fnName, payload: payload || {} })
+        body:    JSON.stringify({ action: fnName, payload: payload || {} }),
+        signal:  ctrl.signal
       });
+      clearTimeout(timer);
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       var data = await resp.json();
       if (data && data.error) throw new Error(data.error);
