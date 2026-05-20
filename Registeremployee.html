@@ -279,6 +279,13 @@
   ];
   var _cdnIdx = 0;
 
+  // Weight files are NOT bundled in npm packages — use GitHub repo CDN instead
+  var _WEIGHT_URLS = [
+    'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights',
+    'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/0.22.2/weights'
+  ];
+  var _weightIdx = 0;
+
   // ── Helpers ─────────────────────────────────────────────────
   function setMsg(step, txt, cls) {
     var el = document.getElementById('reg-msg-' + step);
@@ -395,7 +402,13 @@
   }
 
   function _loadWeights() {
-    var BASE = _CDNS[_cdnIdx] + '/weights';
+    if (_weightIdx >= _WEIGHT_URLS.length) {
+      _modelLoading = false;
+      setModelBar(true, '⚠️ โหลดโมเดลไม่สำเร็จ — จะบันทึกรูปโดยไม่วิเคราะห์ใบหน้า');
+      setTimeout(_enableCaptureAnyway, 800);
+      return;
+    }
+    var BASE = _WEIGHT_URLS[_weightIdx];
     setModelBar(true, 'กำลังโหลดโมเดล AI... (อาจใช้เวลา 15-30 วิ)');
     Promise.all([
       faceapi.nets.tinyFaceDetector.loadFromUri(BASE),
@@ -409,15 +422,9 @@
       _updateAngleUI();
       _startDetectionLoop();
     }).catch(function() {
-      // Try next CDN for weights
-      _cdnIdx++;
-      if (_cdnIdx < _CDNS.length) {
-        _loadWeights();
-      } else {
-        _modelLoading = false;
-        setModelBar(true, '⚠️ โหลดโมเดลไม่สำเร็จ — จะบันทึกรูปโดยไม่วิเคราะห์ใบหน้า');
-        setTimeout(_enableCaptureAnyway, 800);
-      }
+      // Try next weights URL (GitHub CDN → raw GitHub fallback)
+      _weightIdx++;
+      _loadWeights();
     });
   }
 

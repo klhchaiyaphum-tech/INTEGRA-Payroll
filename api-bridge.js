@@ -155,6 +155,17 @@ function _makeGasRun() {
     } else if (fnName === 'calculateMonthlySalary') {
       ok({ data: [], exportConfig: [], alreadyPaid: false });
 
+    } else if (fnName === 'saveOnboardingData') {
+      // Generate a demo employee code and token
+      var yr    = new Date().getFullYear().toString().slice(-2);
+      var seq   = Date.now().toString().slice(-4);
+      var code  = 'EMP' + yr + seq;
+      var token = btoa(code + ':' + (payload.phone || '')).replace(/=/g,'');
+      ok({ success: true, empCode: code, token: token });
+
+    } else if (fnName === 'saveHomeVerification') {
+      ok({ success: true, message: 'บันทึกข้อมูลบ้านพักแล้ว' });
+
     } else {
       // Unknown function: call failure handler (or swallow if none set)
       if (_err) _err(new Error('[offline] "' + fnName + '" ต้องการ GAS — deploy แล้วลองใหม่'));
@@ -215,7 +226,11 @@ function _makeGasRun() {
     submitLeaveRequest:       function(p) { return _call('submitLeaveRequest', p); },
     requestWorkCertificate:   function(p) { return _call('requestWorkCertificate', p); },
     checkLocation:            function(p) { return _call('checkLocation', p); },
-    resignEmployee:           function(p) { return _call('resignEmployee', p); }
+    resignEmployee:           function(p) { return _call('resignEmployee', p); },
+
+    // ── Onboarding ──
+    saveOnboardingData:       function(p) { return _call('saveOnboardingData', p); },
+    saveHomeVerification:     function(p) { return _call('saveHomeVerification', p); }
   };
 
   return api;
